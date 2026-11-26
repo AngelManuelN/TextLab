@@ -65,6 +65,12 @@ STYLE = """
 .tl-format h2 {color:#fff;}
 [data-testid="stMetric"],.tl-kpi {border:1px solid #dbe5f2;border-radius:1rem;padding:.83rem 1rem;
     background:linear-gradient(145deg,#fff,#f1f6ff);box-shadow:0 4px 14px #254b770c;}
+[data-testid="stSidebar"] [data-testid="stMetric"] {
+    background:#1b3a65;border-color:#50729d;color:#f0f5ff;box-shadow:none;
+}
+[data-testid="stSidebar"] [data-testid="stMetric"] [data-testid="stMetricLabel"],
+[data-testid="stSidebar"] [data-testid="stMetric"] [data-testid="stMetricValue"] {color:#f0f5ff;}
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {color:#c5d8f2;}
 .tl-kpi {min-height:7.25rem;}
 .tl-kpi.is-primary {background:linear-gradient(145deg,#eaf3ff,#d9e8fd);}
 .tl-kpi-icon {display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:.55rem;margin-bottom:.3rem;
@@ -181,7 +187,7 @@ def show_training_settings(
     classifier = st.selectbox("Clasificador", tuple(CLASSIFIERS), index=1)
     mode = st.selectbox(
         "Características del texto", tuple(TEXT_MODES),
-        help="Los modos lingüísticos usan el analizador del idioma seleccionado.",
+        help="Palabras usa los términos del texto. POS usa categorías gramaticales. Stopwords conserva solo palabras frecuentes. Palabras de contenido conserva sustantivos, verbos, adjetivos y adverbios, entre otros.",
     )
     if CLASSIFIERS[classifier] in {"logistica", "svm"}:
         value = st.number_input("Regularización inversa (C)", min_value=0.001, value=1.0, step=0.1, format="%.3f")
@@ -197,7 +203,8 @@ def show_training_settings(
         tuple(NGRAMS),
         help="Agrupa uno, dos o tres elementos consecutivos del modo elegido.",
     )
-    representation = st.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"))
+    representation = st.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"),
+                                  help="Convierte las características en números: TF-IDF reduce el peso de términos comunes, Frecuencia cuenta apariciones y Binaria indica presencia.")
     test_percent = st.slider(
         "Datos reservados para prueba", 10, 50, 20, format="%d %%"
     )
@@ -213,6 +220,9 @@ def show_training_settings(
     warnings = validar_configuracion_entrenamiento(clean_data[label_column], proportion, folds)
     for message in warnings:
         st.warning(message)
+
+    if folds and TEXT_MODES[mode] != "palabras" and len(clean_data) >= 10000:
+        st.caption("El análisis lingüístico se repite en cada fold. Para una prueba rápida, usa 3 folds o desactiva la validación cruzada.")
 
     language = "Libre"
     language_code = None
