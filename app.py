@@ -7,9 +7,11 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+from sklearn.model_selection import train_test_split
 from sklearn.utils.multiclass import unique_labels
 
 from textlab.entrenamiento import entrenar_modelo
+from textlab.idioma import detectar_idioma
 from textlab.prediccion import predecir_lote
 from textlab.preparacion import preparar_dataset
 from textlab.validacion_entrenamiento import validar_configuracion_entrenamiento
@@ -144,8 +146,6 @@ def show_training_settings(
         "Características del texto", tuple(TEXT_MODES),
         help="Los modos lingüísticos usan el analizador del idioma seleccionado.",
     )
-    language = st.selectbox("Idioma del texto", tuple(LANGUAGES), disabled=TEXT_MODES[mode] == "palabras",
-                            help="Palabras funciona sin analizador. Para POS, stopwords y palabras de contenido, elige el idioma del CSV.")
     if CLASSIFIERS[classifier] in {"logistica", "svm"}:
         value = st.number_input("Regularización inversa (C)", min_value=0.001, value=1.0, step=0.1, format="%.3f")
         parameter = {"C": value}
@@ -177,10 +177,34 @@ def show_training_settings(
     for message in warnings:
         st.warning(message)
 
+    language = "Libre"
+    language_code = None
+    language_blocked = False
+    if TEXT_MODES[mode] != "palabras":
+        selection = st.selectbox(
+            "Idioma del texto", ("Automático", *LANGUAGES),
+            help="Puedes corregir la detección eligiendo el idioma del CSV.",
+        )
+        if selection != "Automático":
+            language, language_code = selection, LANGUAGES[selection]
+        elif not warnings:
+            training_texts, _ = train_test_split(
+                clean_data[text_column].astype(str).tolist(), test_size=proportion,
+                stratify=clean_data[label_column], random_state=42,
+            )
+            language_code = detectar_idioma(training_texts)
+            language = next((name for name, code in LANGUAGES.items() if code == language_code), None)
+            if language:
+                st.caption(f"Idioma detectado: {language}.")
+            else:
+                language_blocked = True
+                reason = f"Idioma detectado ({language_code}) sin analizador." if language_code else "El idioma no se pudo determinar con suficiente confianza."
+                st.warning(f"{reason} Puedes elegir un idioma manualmente o usar Palabras.")
+
     settings = (dataset_id, text_column, label_column, proportion, features, representation, folds,
                 classifier, mode, language, tuple(parameter.items()))
     experiments = st.session_state.setdefault("experimentos", [])
-    if st.button("Entrenar", type="primary", disabled=bool(warnings)):
+    if st.button("Entrenar", type="primary", disabled=bool(warnings) or language_blocked):
         try:
             with st.spinner(f"Entrenando {classifier}…"):
                 result = entrenar_modelo(
@@ -192,7 +216,7 @@ def show_training_settings(
                     folds=folds,
                     clasificador=CLASSIFIERS[classifier],
                     modo_texto=TEXT_MODES[mode],
-                    idioma=LANGUAGES[language],
+                    idioma=language_code or "es",
                     incluir_detalles_prueba=True,
                     **parameter,
                 )
@@ -214,7 +238,7 @@ def show_training_settings(
                     "Columna de etiqueta": label_column,
                     "Clasificador": classifier,
                     "Características": mode,
-                    "Idioma": language if TEXT_MODES[mode] != "palabras" else "Libre",
+                    "Idioma": language,
                     "N-gramas": features,
                     "Parámetros": ", ".join(f"{key}={value}" for key, value in parameter.items()),
                     "Representación": representation,

@@ -22,7 +22,7 @@ Abre [TextLab en local](http://localhost:8501). Para publicar en Streamlit Commu
 ## Usar TextLab
 
 1. Carga un CSV y selecciona las columnas de texto y etiqueta. Revisa la distribución de clases y las filas excluidas.
-2. Elige palabras, POS, stopwords o content words. Elige unigramas, bigramas o trigramas. Cada opción usa exclusivamente el tamaño indicado. Selecciona frecuencia, binaria o TF-IDF. Selecciona el idioma del CSV para POS, stopwords o palabras de contenido. El modo Palabras no requiere un analizador de idioma.
+2. Elige palabras, POS, stopwords o content words. Elige unigramas, bigramas o trigramas. Cada opción usa exclusivamente el tamaño indicado. Selecciona frecuencia, binaria o TF-IDF. Para POS, stopwords y palabras de contenido se detecta el idioma a partir de una muestra de entrenamiento. Puedes corregirlo manualmente. Si no hay un analizador disponible, puedes usar Palabras. El modo Palabras no requiere un analizador de idioma.
 3. Selecciona regresión logística, SVM, Random Forest o Naive Bayes. Ajusta la proporción de prueba, los parámetros del clasificador y la validación cruzada estratificada. Se admiten 3, 5 y 10 folds o desactivarla. Cada partición ajusta las características con sus datos de entrenamiento.
 4. Entrena y revisa accuracy, precisión, recall y F1, la matriz de confusión, las gráficas por clase y los resultados de validación cruzada. Los experimentos se conservan durante la sesión.
 5. Selecciona un modelo entrenado y escribe un texto o sube un CSV sin etiquetas. Puedes descargar las predicciones por lote.
