@@ -1,6 +1,9 @@
-"""Extracción de etiquetas gramaticales POS en español con spaCy."""
+"""Extracción de POS y palabras de contenido en español con spaCy."""
 
 from functools import lru_cache
+
+
+_CATEGORIAS_CONTENIDO = {"NOUN", "PROPN", "VERB", "ADJ", "ADV"}
 
 
 @lru_cache(maxsize=1)
@@ -34,3 +37,18 @@ def extraer_pos(texto):
 
     doc = _cargar_modelo()(texto)
     return [token.pos_ for token in doc if not token.is_space and not token.is_punct]
+
+
+def extraer_palabras_contenido(texto):
+    """Devuelve sustantivos, verbos, adjetivos y adverbios en orden original."""
+    if not texto or texto.isspace():
+        return []
+
+    doc = _cargar_modelo()(texto)
+    return [
+        token.text
+        for token in doc
+        if not token.is_space
+        and not token.is_punct
+        and token.pos_ in _CATEGORIAS_CONTENIDO
+    ]
