@@ -1,0 +1,31 @@
+texto,etiqueta
+"Me encantó la película de principio a fin",positivo
+"El servicio al cliente fue rápido y amable",positivo
+"La comida estaba deliciosa y bien presentada",positivo
+"Disfruté mucho el concierto anoche",positivo
+"El producto llegó antes de lo esperado",positivo
+"Muy buena experiencia en la tienda",positivo
+"El equipo resolvió mi problema en minutos",positivo
+"La aplicación funciona perfectamente",positivo
+"El hotel era cómodo y limpio",positivo
+"Quedé satisfecho con la compra",positivo
+"La atención fue excelente y profesional",positivo
+"El envío fue puntual y sin daños",positivo
+"Me gustó mucho el diseño del sitio web",positivo
+"El soporte técnico fue muy útil",positivo
+"Recomiendo ampliamente este lugar",positivo
+"La película me pareció aburrida y lenta",negativo
+"El servicio al cliente fue lento y descortés",negativo
+"La comida llegó fría y mal presentada",negativo
+"No disfruté el concierto para nada",negativo
+"El producto llegó con retraso y dañado",negativo
+"Muy mala experiencia en la tienda",negativo
+"El equipo nunca resolvió mi problema",negativo
+"La aplicación se cierra constantemente",negativo
+"El hotel era incómodo y sucio",negativo
+"Quedé decepcionado con la compra",negativo
+"La atención fue pésima y grosera",negativo
+"El envío llegó tarde y roto",negativo
+"No me gustó el diseño del sitio web",negativo
+"El soporte técnico no ayudó en nada",negativo
+"No recomiendo este lugar a nadie",negativo
