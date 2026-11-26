@@ -2,11 +2,11 @@
 
 Aplicación web para entrenar, comparar y usar clasificadores supervisados de textos desde archivos CSV. Las clases se obtienen del archivo que se carga.
 
-**Aplicación pública:** [Abrir TextLab](https://textlab-manuel-solutions.streamlit.app/)
+[Abrir TextLab](https://textlab-manuel-solutions.streamlit.app/) · [Tablero de seguimiento](https://github.com/users/AngelManuelN/projects/1)
 
 ## Ejecutar en local
 
-Se recomienda Python 3.12. Las dependencias incluyen Streamlit, Pandas, Plotly, scikit-learn y los modelos de spaCy para español, inglés y francés.
+Se recomienda Python 3.12. Las dependencias incluyen Streamlit, Pandas, Plotly, scikit-learn, langdetect y los modelos de spaCy para español, inglés y francés.
 
 ```sh
 python -m venv .venv
@@ -21,19 +21,29 @@ python -m streamlit run app.py
 
 Abre [TextLab en local](http://localhost:8501). Para publicar en Streamlit Community Cloud, usa la rama `entrega/textlab`, el archivo `app.py` y Python 3.12.
 
-## Usar TextLab
+## Guía de configuración
 
-1. Carga un CSV y selecciona las columnas de texto y etiqueta. Revisa la distribución de clases y las filas excluidas.
-2. Elige palabras, POS, stopwords o content words. Elige unigramas, bigramas o trigramas. Cada opción usa exclusivamente el tamaño indicado. Selecciona frecuencia, binaria o TF-IDF. Para POS, stopwords y palabras de contenido se detecta el idioma a partir de una muestra de entrenamiento. Puedes corregirlo manualmente. Si no hay un analizador disponible, puedes usar Palabras. El modo Palabras no requiere un analizador de idioma.
-3. Selecciona regresión logística, SVM, Random Forest o Naive Bayes. Ajusta la proporción de prueba, los parámetros del clasificador y la validación cruzada estratificada. Se admiten 3, 5 y 10 folds o desactivarla. Cada partición ajusta las características con sus datos de entrenamiento.
-4. Entrena y revisa accuracy, precisión, recall y F1, la matriz de confusión, las gráficas por clase y los resultados de validación cruzada. Los experimentos se conservan durante la sesión.
-5. Selecciona un modelo entrenado y escribe un texto o sube un CSV sin etiquetas. Puedes descargar las predicciones por lote.
+### Primer experimento
 
-Si la validación pide más ejemplos por clase, reduce los folds o carga más datos. Si el vocabulario está vacío, elige un tamaño de n-grama menor o un modo que conserve más palabras.
+1. Sube el archivo original y elige la columna que contiene los textos y la que contiene las etiquetas. Los nombres pueden variar. Si ves una sola columna o la vista previa se ve mal, abre **Formato de importación** para ajustar separador, encabezados y comillas. También se admiten TSV y TXT delimitados. Las codificaciones admitidas son UTF-8, UTF-16 y UTF-32 con BOM, y Windows-1252.
+2. Revisa **Explorador de datos** para ver las clases, los datos faltantes y los duplicados. La barra lateral indica cuántas filas se usarán y por qué se excluyeron las demás.
+3. Pulsa **Configuración rápida** para usar SVM lineal, Palabras, unigramas, TF-IDF, 20 % de prueba y validación cruzada desactivada. Luego pulsa **Entrenar** y espera el mensaje **Modelo entrenado**.
+4. Abre **Resultados** para ver las métricas y la matriz de confusión. En **Análisis de errores** puedes leer qué textos se clasificaron mal. **Experimentos** conserva la configuración y métricas de cada ejecución durante la sesión.
+5. En **Predicción**, elige un modelo entrenado. Puedes escribir un texto o subir un CSV con textos nuevos y descargar las clases predichas.
 
-Cada sesión conserva sus propios CSV, experimentos y modelos entrenados. En una instalación compartida, todas las personas ven la misma aplicación. Para recuperar resultados fuera de tu sesión, puedes descargar las predicciones por lote.
+### Qué cambia cada ajuste
 
-Los nombres de columna son libres. En Formato de importación puedes ajustar el separador, indicar si hay encabezados y tratar las comillas como texto literal. También puedes cargar TSV o TXT delimitados. Los archivos admiten UTF-8, UTF-16 o UTF-32 con marca de codificación y Windows-1252.
+| Ajuste | Cómo usarlo |
+| --- | --- |
+| Clasificador | SVM lineal y regresión logística usan `C`. Un `C` menor aplica más regularización. Random Forest permite elegir cuántos árboles entrenar. Naive Bayes usa `alpha` para suavizar los conteos. |
+| Características | **Palabras** usa términos del texto. **POS** usa categorías gramaticales. **Stopwords** conserva las palabras frecuentes detectadas. **Palabras de contenido** conserva categorías como sustantivos, verbos y adjetivos. |
+| Idioma | Los modos lingüísticos detectan español, inglés o francés y permiten corregir la selección. Para datos en otros idiomas puedes probar **Palabras**. |
+| N-gramas | Unigramas son elementos individuales, bigramas son pares y trigramas son grupos de tres. Por ejemplo, «muy buen servicio» es un trigrama de palabras. |
+| Representación | **Frecuencia** cuenta apariciones, **Binaria** marca presencia y **TF-IDF** reduce el peso de términos comunes en muchos textos. |
+| División de prueba | Con 20 %, el modelo se entrena con 80 % de las filas utilizables y se evalúa con el 20 % reservado. |
+| Validación cruzada | Usa 3, 5 o 10 folds para comparar configuraciones dentro del conjunto de entrenamiento. Empieza por 3 si quieres medir estabilidad. Cada fold ajusta su propio vocabulario y sus pesos, usando solo su partición de entrenamiento. |
+
+Si cambias un ajuste, vuelve a pulsar **Entrenar** para aplicarlo. El modelo anterior sigue disponible en la sesión. Si un fold necesita más ejemplos por clase, reduce el número de folds o usa más datos. Si el vocabulario queda vacío, prueba unigramas o el modo **Palabras**.
 
 ## Datos de prueba
 
