@@ -72,6 +72,59 @@ STYLE = """
 @container (max-width: 520px) {
     [data-testid="stHorizontalBlock"] {grid-template-columns: minmax(0, 1fr);}
 }
+
+[data-testid="stAppViewContainer"] {
+    background: radial-gradient(ellipse at 95% 0%, #16223a 0%, transparent 42%), #101319;
+}
+[data-testid="stSidebar"] {background: #141821; border-color: #2a3443;}
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap: .76rem;}
+[data-testid="stHeader"] {background: #101319bb; backdrop-filter: blur(12px);}
+.textlab-header {
+    position: relative; overflow: hidden; padding: 1.65rem 2rem; border-color: #435779;
+    background: radial-gradient(ellipse at 95% 120%, #25558b 0%, transparent 64%),
+                linear-gradient(115deg, #151a24, #1c2841);
+}
+.textlab-header .textlab-mark {
+    display: grid; place-items: center; width: 3rem; height: 3rem; margin-bottom: .8rem;
+    border-radius: .95rem; color: #f4fbff; font-size: 1.6rem;
+    border: 1px solid #a6ccff88;
+    background: linear-gradient(145deg,#89c1ff,#2957c7 62%,#624aff);
+    box-shadow: inset 0 1px #e4f2ff, 0 6px 22px #245d9477;
+}
+[data-testid="stMetric"] {
+    border-color:#344256; background: linear-gradient(150deg,#202938,#171d28);
+    box-shadow: inset 0 1px #ffffff13; min-height: 5.4rem;
+}
+.tl-kpi {
+    padding: .95rem 1.05rem; border: 1px solid #354258; border-radius: 1.05rem;
+    background: linear-gradient(150deg,#212b3e,#171c26); min-height: 8.2rem;
+    box-shadow: inset 0 1px #ffffff17, 0 8px 20px #070b132b;
+}
+.tl-kpi.is-primary {background: radial-gradient(ellipse at 100% 0%,#254e83,transparent 80%),#19253d;}
+.tl-kpi-icon {
+    display:grid;place-items:center;width:1.9rem;height:1.9rem;border-radius:.6rem;margin-bottom:.42rem;
+    background:linear-gradient(145deg,#87bcff55,#6753ff55);color:#cde5ff;border:1px solid #94c2ff55;
+}
+.tl-kpi-label {color:#b9c9df;font-size:.82rem;}
+.tl-kpi-value {display:block;font-size:clamp(1.5rem,3cqw,2.1rem);font-weight:700;color:#f1f7ff;
+    line-height:1.25;font-variant-numeric:tabular-nums;letter-spacing:-.03em;}
+[data-testid="stFileUploaderDropzone"] {background: #1a2436; border-color: #547298;}
+[data-testid="stTextArea"] textarea {
+    background:#131a27; border:1px solid #374963; border-radius:.85rem; padding:1rem;
+    line-height:1.55; overflow-wrap:anywhere; color:#edf5ff;
+}
+[data-testid="stTextArea"] textarea:focus {outline:2px solid #85b8ff; outline-offset:2px;}
+[data-testid="stBaseButton-primary"] {
+    background:linear-gradient(135deg,#9acfff,#70a7fc); color:#08182e; border:1px solid #bcdcff;
+    border-radius:.75rem; font-weight:700; box-shadow:inset 0 1px #f3f9ff80;
+}
+[data-testid="stBaseButton-primary"]:hover:not(:disabled) {background:#afd8ff; color:#08182e;}
+[data-testid="stBaseButton-primary"]:disabled {background:#263245;color:#a9b4c5;border-color:#394a63;box-shadow:none;}
+[data-testid="stExpander"] details {background:#171e2a;border-color:#354258;border-radius:1rem;}
+[data-testid="stExpander"] summary {padding:.84rem 1rem;}
+[data-testid="stTabs"] [role="tablist"] {gap:.35rem;overflow-x:auto;}
+[data-testid="stTabs"] [role="tab"] {padding-inline:.75rem;white-space:nowrap;}
+@media (max-width: 520px) {.textlab-header {padding:1.25rem;}}
 </style>
 """
 
@@ -204,7 +257,7 @@ def show_training_settings(
     settings = (dataset_id, text_column, label_column, proportion, features, representation, folds,
                 classifier, mode, language, tuple(parameter.items()))
     experiments = st.session_state.setdefault("experimentos", [])
-    if st.button("Entrenar", type="primary", disabled=bool(warnings) or language_blocked):
+    if st.button("Entrenar", type="primary", icon=":material/play_arrow:", width="stretch", disabled=bool(warnings) or language_blocked):
         try:
             with st.spinner(f"Entrenando {classifier}…"):
                 result = entrenar_modelo(
@@ -307,10 +360,15 @@ def show_predictions() -> None:
     predictor = experiments[chosen]["result"]["pipeline"].predict
     single, batch = st.tabs(["Texto individual", "Archivo CSV"])
     with single:
-        text = st.text_area("Texto por clasificar")
-        if st.button("Predecir texto", disabled=not text.strip()):
-            prediction = predecir_lote([text], predictor)[0]["etiqueta"]
-            st.success(f"Clase predicha: {prediction}")
+        text = st.text_area("Texto por clasificar", height=230, placeholder="Pega una frase, una reseña o varios párrafos.")
+        st.caption(f"{len(text):,} caracteres")
+        if st.button("Predecir texto", type="primary", icon=":material/bolt:", disabled=not text.strip()):
+            try:
+                prediction = predecir_lote([text], predictor)[0]["etiqueta"]
+            except ValueError as error:
+                st.error(f"No se pudo clasificar el texto. {error}")
+            else:
+                st.success(f"Clase predicha: {prediction}", icon=":material/check_circle:")
 
     with batch:
         upload = st.file_uploader("CSV de textos sin etiquetas", type=["csv"], key="prediction_upload")
@@ -331,8 +389,12 @@ def show_predictions() -> None:
         if has_empty:
             st.warning("La columna seleccionada contiene textos vacíos. Elige otra columna o corrige el CSV.")
         key = (chosen, sha256(payload).hexdigest(), text_column)
-        if st.button("Predecir CSV", disabled=bool(has_empty)):
-            predictions = predecir_lote(texts.tolist(), predictor)
+        if st.button("Predecir CSV", type="primary", icon=":material/bolt:", disabled=bool(has_empty)):
+            try:
+                predictions = predecir_lote(texts.tolist(), predictor)
+            except ValueError as error:
+                st.error(f"No se pudo clasificar el CSV. {error}")
+                return
             st.session_state["prediccion_lote"] = (key, pd.DataFrame(predictions).rename(columns={"etiqueta": "prediccion"}))
         cached = st.session_state.get("prediccion_lote")
         if cached is not None and cached[0] == key:
@@ -340,7 +402,7 @@ def show_predictions() -> None:
             st.dataframe(output, hide_index=True, width="stretch")
             st.download_button(
                 "Descargar predicciones", output.to_csv(index=False).encode("utf-8-sig"),
-                file_name="textlab-predicciones.csv", mime="text/csv", on_click="ignore",
+                file_name="textlab-predicciones.csv", mime="text/csv", on_click="ignore", icon=":material/download:",
             )
 
 
@@ -361,11 +423,18 @@ def show_results(result: dict | None) -> None:
     metrics = calculate_metrics(actual, predicted)
     values = [(name, f"{metrics[name]:.1%}") for name in ("Accuracy", "F1 macro", "Precisión macro")]
     values.append(("Inferencia por texto", f"{result.get('inferencia_ms_por_texto', 0):.3f} ms"))
-    for column, (name, value) in zip(st.columns(4), values):
-        column.metric(name, value)
+    for index, (column, (name, value), icon) in enumerate(
+        zip(st.columns(4), values, ("◎", "◈", "◇", "↯"))
+    ):
+        variant = " is-primary" if index == 0 else ""
+        column.markdown(
+            f'<div class="tl-kpi{variant}"><span class="tl-kpi-icon" aria-hidden="true">{icon}</span>'
+            f'<span class="tl-kpi-label">{name}</span><strong class="tl-kpi-value">{value}</strong></div>',
+            unsafe_allow_html=True,
+        )
     left, right = st.columns((1, 1.2))
 
-    with left.expander("Matriz de confusión", expanded=True):
+    with left.expander("Matriz de confusión", expanded=True, icon=":material/grid_view:"):
         st.caption("La diagonal muestra los aciertos. Las demás celdas muestran qué clases se confundieron.")
         labels = [str(label) for label in classes]
         matrix = confusion_matrix(actual, predicted, labels=classes)
@@ -387,7 +456,7 @@ def show_results(result: dict | None) -> None:
         )
         st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
 
-    with right.expander("Desempeño por clase", expanded=True):
+    with right.expander("Desempeño por clase", expanded=True, icon=":material/bar_chart:"):
         st.caption(f"Recall macro {metrics['Recall macro']:.1%}. Pasa sobre una barra para ver sus valores.")
         precision, recall, f1, support = precision_recall_fscore_support(
             actual, predicted, labels=classes, zero_division=0
@@ -413,7 +482,7 @@ def show_results(result: dict | None) -> None:
 
     validation = result.get("validacion_cruzada")
     if validation:
-        with st.expander("Validación cruzada"):
+        with st.expander("Validación cruzada", icon=":material/monitoring:"):
             st.caption(f"{validation['folds']} folds sobre la parte de entrenamiento. La prueba final se evaluó por separado.")
             columns = st.columns(2)
             folds_chart = go.Figure()
@@ -455,6 +524,10 @@ def show_errors(result: dict | None) -> None:
     if chosen is not None:
         errors = errors.loc[errors["Clase real"].eq(chosen) | errors["Clase predicha"].eq(chosen)]
     st.dataframe(errors, width="stretch", hide_index=True)
+    with st.expander("Leer un texto completo", icon=":material/article:"):
+        selected = st.selectbox("Fila de prueba", errors.index.tolist(), format_func=lambda value: f"{value + 1}")
+        st.text_area("Texto completo", value=str(errors.loc[selected, "Texto"]), disabled=True, height=240,
+                     key=f"texto_error_{id(result)}_{selected}")
 
 
 def main() -> None:
@@ -487,7 +560,7 @@ def main() -> None:
                         result = show_training_settings(data, text_column, label_column, sha256(payload).hexdigest(), name)
 
     st.markdown(
-        '<header class="textlab-header"><p class="textlab-brand">manuel_solutions</p><h1>TextLab</h1>'
+        '<header class="textlab-header"><span class="textlab-mark" aria-hidden="true">◈</span><p class="textlab-brand">manuel_solutions</p><h1>TextLab</h1>'
         '<p>Entrena, compara y prueba clasificadores de texto.</p></header>',
         unsafe_allow_html=True,
     )
