@@ -4,6 +4,8 @@ from io import StringIO
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+from sklearn.utils.multiclass import unique_labels
 
 from textlab.preparacion import preparar_dataset
 from textlab.validacion_entrenamiento import validar_configuracion_entrenamiento
@@ -139,6 +141,58 @@ def show_training_settings(data: pd.DataFrame, text_column: str, label_column: s
     st.caption("El botón se habilitará cuando se conecte el módulo de entrenamiento.")
 
 
+def show_results(result: dict | None) -> None:
+    st.divider()
+    st.subheader("Resultados")
+    if result is None:
+        st.info("Ejecuta un experimento para ver los resultados.")
+        return
+
+    actual = list(result["etiquetas_reales"])
+    predicted = list(result["etiquetas_predichas"])
+    if not actual or len(actual) != len(predicted):
+        st.warning("Se necesita una predicción por cada etiqueta de prueba para calcular las métricas.")
+        return
+
+    classes = unique_labels(actual, predicted)
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        actual, predicted, labels=classes, average="macro", zero_division=0
+    )
+    st.caption(f"Evaluación con {len(actual)} textos de prueba. El promedio macro da el mismo peso a cada clase.")
+    for column, (name, value) in zip(
+        st.columns(4),
+        (
+            ("Accuracy", accuracy_score(actual, predicted)),
+            ("Precisión macro", precision),
+            ("Recall macro", recall),
+            ("F1 macro", f1),
+        ),
+    ):
+        column.metric(name, f"{value:.1%}")
+
+    st.markdown("**Matriz de confusión**")
+    st.caption("La diagonal muestra los aciertos. Las demás celdas muestran qué clases se confundieron.")
+    labels = [str(label) for label in classes]
+    matrix = confusion_matrix(actual, predicted, labels=classes)
+    chart = go.Figure(
+        go.Heatmap(
+            z=matrix.tolist(),
+            x=labels,
+            y=labels,
+            colorscale=[[0, "#f2effb"], [1, "#6253C7"]],
+            texttemplate="%{z}",
+            hovertemplate="Real: %{y}<br>Predicha: %{x}<br>Textos: %{z}<extra></extra>",
+            colorbar=dict(title="Textos"),
+        )
+    )
+    chart.update_layout(
+        margin=dict(l=8, r=12, t=12, b=12),
+        xaxis=dict(title="Clase predicha", type="category", automargin=True),
+        yaxis=dict(title="Clase real", type="category", autorange="reversed", automargin=True),
+    )
+    st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
+
+
 def main() -> None:
     st.set_page_config(page_title="TextLab · Conjunto de datos", layout="wide")
     st.markdown(STYLE, unsafe_allow_html=True)
@@ -185,6 +239,7 @@ def main() -> None:
         st.metric("Filas", len(data))
         show_distribution(preview_distribution(data[label_column]))
         show_training_settings(data, text_column, label_column)
+        show_results(st.session_state.get("resultado_entrenamiento"))
         return
 
     try:
@@ -205,6 +260,7 @@ def main() -> None:
         column.metric(label, profile[key])
     show_distribution(profile["distribucion_clases"])
     show_training_settings(data, text_column, label_column)
+    show_results(st.session_state.get("resultado_entrenamiento"))
 
 
 if __name__ == "__main__":
