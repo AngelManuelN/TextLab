@@ -380,15 +380,25 @@ def show_predictions() -> None:
     predictor = experiments[chosen]["result"]["pipeline"].predict
     single, batch = st.tabs(["Texto individual", "Archivo CSV"])
     with single:
-        text = st.text_area("Texto por clasificar", height=230, placeholder="Pega una frase, una reseña o varios párrafos.")
-        st.caption(f"{len(text):,} caracteres")
-        if st.button("Predecir texto", type="primary", icon=":material/bolt:", disabled=not text.strip()):
-            try:
-                prediction = predecir_lote([text], predictor)[0]["etiqueta"]
-            except ValueError as error:
-                st.error(f"No se pudo clasificar el texto. {error}")
+        with st.form("prediccion_individual"):
+            text = st.text_area("Texto por clasificar", height=230, placeholder="Pega una frase, una reseña o varios párrafos.")
+            submitted = st.form_submit_button("Predecir texto", type="primary", icon=":material/bolt:")
+        if submitted:
+            st.session_state.pop("prediccion_individual_resultado", None)
+            if not text.strip():
+                st.warning("Escribe un texto para clasificar.")
             else:
-                st.info(f"Clase predicha: {prediction}", icon=":material/label:")
+                try:
+                    prediction = predecir_lote([text], predictor)[0]["etiqueta"]
+                except ValueError as error:
+                    st.error(f"No se pudo clasificar el texto. {error}")
+                else:
+                    st.session_state["prediccion_individual_resultado"] = (chosen, text, prediction)
+        cached_text = st.session_state.get("prediccion_individual_resultado")
+        if cached_text is not None and cached_text[:2] == (chosen, text):
+            st.info(f"Clase predicha: {cached_text[2]}", icon=":material/label:")
+            st.caption("Resultado del último texto enviado.")
+            st.text(text if len(text) <= 240 else text[:237] + "…")
 
     with batch:
         upload = st.file_uploader("CSV de textos sin etiquetas", type=["csv"], key="prediction_upload")
