@@ -13,6 +13,7 @@ def validar_configuracion_entrenamiento(
 ):
     """Valida clases, división estratificada y folds antes de entrenar."""
     avisos = []
+    etiquetas = list(etiquetas)
 
     # Revisa que haya etiquetas disponibles
     if not etiquetas:
@@ -47,7 +48,7 @@ def validar_configuracion_entrenamiento(
     # Realiza la división estratificada real con semilla provisional
     indices = list(range(len(etiquetas)))
     try:
-        _, indices_entrenamiento = train_test_split(
+        indices_entrenamiento, indices_prueba = train_test_split(
             indices,
             test_size=proporcion_prueba,
             stratify=etiquetas,
@@ -63,18 +64,20 @@ def validar_configuracion_entrenamiento(
     etiquetas_entrenamiento = [etiquetas[i] for i in indices_entrenamiento]
     conteo_entrenamiento = Counter(etiquetas_entrenamiento)
 
-    if len(conteo_entrenamiento) < 2:
-        avisos.append(
-            "Después de dividir los datos quedó menos de 2 clases en el conjunto de entrenamiento. Ajusta la proporción de prueba o agrega más ejemplos por clase."
-        )
-        return avisos
+    conteo_prueba = Counter(etiquetas[i] for i in indices_prueba)
+    if conteo_entrenamiento.keys() != conteo_total.keys() or conteo_prueba.keys() != conteo_total.keys():
+        return [
+            "Alguna clase quedó fuera de entrenamiento o de prueba. "
+            "Ajusta la proporción de prueba o agrega más ejemplos de esa clase."
+        ]
+
 
     # Si se pidieron folds, verifica que cada clase tenga suficientes ejemplos en entrenamiento
     if folds is not None:
         for clase, cantidad_train in conteo_entrenamiento.items():
             if cantidad_train < folds:
                 # Sugiere un número de folds menor que sí alcance
-                sugeridos = [f for f in (10, 5, 3) if f < folds and f <= cantidad_train]
+                sugeridos = [f for f in (10, 5, 3) if f < folds and f <= min(conteo_entrenamiento.values())]
                 if sugeridos:
                     sugerencia_folds = f"usar {sugeridos[0]} folds"
                 else:
