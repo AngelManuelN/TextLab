@@ -1,3 +1,4 @@
+from hashlib import sha256
 import csv
 from io import StringIO
 
@@ -7,6 +8,7 @@ import streamlit as st
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
 from sklearn.utils.multiclass import unique_labels
 
+from textlab.entrenamiento import entrenar_modelo
 from textlab.preparacion import preparar_dataset
 from textlab.validacion_entrenamiento import validar_configuracion_entrenamiento
 
@@ -101,7 +103,9 @@ def show_distribution(distribution: dict) -> None:
     st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
 
 
-def show_training_settings(data: pd.DataFrame, text_column: str, label_column: str) -> None:
+def show_training_settings(
+    data: pd.DataFrame, text_column: str, label_column: str, dataset_id: str
+) -> dict | None:
     clean_data, summary = preparar_dataset(data, text_column, label_column)
 
     st.divider()
@@ -117,12 +121,12 @@ def show_training_settings(data: pd.DataFrame, text_column: str, label_column: s
         return
 
     feature_column, representation_column, test_column, validation_column = st.columns(4)
-    feature_column.selectbox(
+    features = feature_column.selectbox(
         "Grupos de palabras",
         ("Unigramas", "Bigramas", "Trigramas"),
         help="Elija palabras individuales, parejas o grupos de tres palabras consecutivas.",
     )
-    representation_column.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"))
+    representation = representation_column.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"))
     test_percent = test_column.slider(
         "Datos reservados para prueba", 10, 50, 20, format="%d %%"
     )
@@ -134,11 +138,34 @@ def show_training_settings(data: pd.DataFrame, text_column: str, label_column: s
         help="Evalúa el modelo varias veces con distintas divisiones de los datos de entrenamiento.",
     )
 
-    for message in validar_configuracion_entrenamiento(clean_data[label_column], test_percent / 100, folds):
+    proportion = test_percent / 100
+    warnings = validar_configuracion_entrenamiento(clean_data[label_column], proportion, folds)
+    for message in warnings:
         st.warning(message)
 
-    st.button("Entrenar", type="primary", disabled=True)
-    st.caption("El botón se habilitará cuando se conecte el módulo de entrenamiento.")
+    supported = features == "Unigramas" and representation == "TF-IDF" and folds is None
+    if not supported:
+        st.info("Para este primer experimento elige Unigramas, TF-IDF y validación cruzada desactivada.")
+
+    settings = (dataset_id, text_column, label_column, proportion, features, representation, folds)
+    if st.button("Entrenar", type="primary", disabled=bool(warnings) or not supported):
+        try:
+            with st.spinner("Entrenando la regresión logística…"):
+                result = entrenar_modelo(
+                    clean_data[text_column].astype(str).tolist(),
+                    clean_data[label_column].tolist(),
+                    proporcion_prueba=proportion,
+                )
+        except ValueError as error:
+            st.session_state.pop("resultado_entrenamiento", None)
+            st.error(f"No se pudo entrenar con estos datos. {error}")
+            return None
+        st.session_state["resultado_entrenamiento"] = (settings, result)
+
+    saved = st.session_state.get("resultado_entrenamiento")
+    if saved is not None and saved[0] == settings:
+        return saved[1]
+    return None
 
 
 def show_results(result: dict | None) -> None:
@@ -215,8 +242,9 @@ def main() -> None:
         if not use_sample:
             return
 
+    payload = SAMPLE.encode("utf-8") if use_sample else uploaded.getvalue()
     try:
-        data = read_csv(SAMPLE.encode("utf-8") if use_sample else uploaded.getvalue())
+        data = read_csv(payload)
     except (UnicodeError, pd.errors.EmptyDataError, pd.errors.ParserError):
         st.error("No se pudo leer el CSV. Revise que tenga encabezados y un separador consistente.")
         return
@@ -238,8 +266,7 @@ def main() -> None:
     if perfilar_dataset is None:
         st.metric("Filas", len(data))
         show_distribution(preview_distribution(data[label_column]))
-        show_training_settings(data, text_column, label_column)
-        show_results(st.session_state.get("resultado_entrenamiento"))
+        show_results(show_training_settings(data, text_column, label_column, sha256(payload).hexdigest()))
         return
 
     try:
@@ -259,8 +286,7 @@ def main() -> None:
     ):
         column.metric(label, profile[key])
     show_distribution(profile["distribucion_clases"])
-    show_training_settings(data, text_column, label_column)
-    show_results(st.session_state.get("resultado_entrenamiento"))
+    show_results(show_training_settings(data, text_column, label_column, sha256(payload).hexdigest()))
 
 
 if __name__ == "__main__":
