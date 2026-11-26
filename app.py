@@ -45,6 +45,12 @@ STYLE = """
 [data-testid="stMainBlockContainer"] {max-width:1440px;padding-top:2.8rem;container-type:inline-size;}
 [data-testid="stSidebar"] {background:linear-gradient(168deg,#102e58,#102447);border-right:1px solid #264975;}
 [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap:.68rem;}
+[data-testid="stSidebarContent"] {
+    overflow-y:auto; scrollbar-width:auto; scrollbar-color:#82a8dc #18355b;
+}
+[data-testid="stSidebar"] [data-testid="stSliderTickBarMin"],
+[data-testid="stSidebar"] [data-testid="stSliderTickBarMax"] {color:#bfd4f1;}
+
 .tl-brand {display:flex;align-items:center;gap:.7rem;padding:.3rem 0 .8rem;color:#fff;}
 .tl-brand strong {display:block;font-size:1.25rem;line-height:1.25;}
 .tl-brand small {display:block;color:#b7cbee;font-size:.76rem;}
@@ -190,6 +196,11 @@ def show_training_settings(
     clean_data, summary = preparar_dataset(data, text_column, label_column)
 
     st.subheader("Entrenamiento")
+    st.button("Configuración rápida", icon=":material/bolt:", width="stretch", on_click=usar_configuracion_rapida)
+    test_percent = st.slider(
+        "Datos reservados para prueba", 10, 50, 20, format="%d %%", key="train_test_percent"
+    )
+    st.caption(f"{100 - test_percent} % para entrenar y {test_percent} % para probar.")
     st.metric("Filas utilizables", summary["filas_utilizables"])
     st.caption(
         f"Filas excluidas · Sin datos ({summary['filas_sin_datos']}), "
@@ -199,7 +210,6 @@ def show_training_settings(
         st.warning("No quedaron filas utilizables. Revise los datos o elija otras columnas.")
         return
 
-    st.button("Configuración rápida", icon=":material/bolt:", width="stretch", on_click=usar_configuracion_rapida)
     classifier = st.selectbox("Clasificador", tuple(CLASSIFIERS), index=1, key="train_classifier")
     mode = st.selectbox(
         "Características del texto", tuple(TEXT_MODES), key="train_mode",
@@ -221,10 +231,6 @@ def show_training_settings(
     )
     representation = st.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"), key="train_representation",
                                   help="Convierte las características en números: TF-IDF reduce el peso de términos comunes, Frecuencia cuenta apariciones y Binaria indica presencia.")
-    test_percent = st.slider(
-        "Datos reservados para prueba", 10, 50, 20, format="%d %%", key="train_test_percent"
-    )
-    st.caption(f"{100 - test_percent} % para entrenar y {test_percent} % para probar.")
     folds = st.selectbox(
         "Validación cruzada",
         (None, 3, 5, 10), key="train_folds",
