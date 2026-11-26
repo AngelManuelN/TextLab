@@ -2,6 +2,8 @@
 
 Aplicación web para entrenar, comparar y usar clasificadores supervisados de textos desde archivos CSV. Las clases se obtienen del archivo que se carga.
 
+**Aplicación pública:** [Abrir TextLab](https://textlab-manuel-solutions.streamlit.app/)
+
 ## Ejecutar en local
 
 Se recomienda Python 3.12. Las dependencias incluyen Streamlit, Pandas, Plotly, scikit-learn y los modelos de spaCy para español, inglés y francés.
