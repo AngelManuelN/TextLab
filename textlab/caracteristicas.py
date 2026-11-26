@@ -1,5 +1,7 @@
 """Vectorizadores de características de texto para TextLab."""
 
+from functools import partial
+
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 from .pos import extraer_palabras_contenido, extraer_pos, extraer_stopwords
@@ -16,6 +18,7 @@ def crear_vectorizador(
     ngram_range=(1, 1),
     representacion="tfidf",
     modo_texto="palabras",
+    idioma="es",
 ):
     """Crea un vectorizador sin ajustar para usar dentro de un Pipeline.
 
@@ -24,6 +27,7 @@ def crear_vectorizador(
             unigramas y (2, 2) para bigramas.
         representacion: "tfidf", "frecuencia" o "binaria".
         modo_texto: "palabras", "pos", "stopwords" o "palabras_contenido".
+        idioma: código del analizador para los modos lingüísticos (es, en, fr).
 
     En los modos POS, stopwords y palabras_contenido, el extractor devuelve
     los tokens y scikit-learn aplica ngram_range sobre esa secuencia.
@@ -33,7 +37,7 @@ def crear_vectorizador(
         opciones_tokens = {}
     elif modo_texto in _EXTRACTORES_TEXTO:
         opciones_tokens = {
-            "tokenizer": _EXTRACTORES_TEXTO[modo_texto],
+            "tokenizer": partial(_EXTRACTORES_TEXTO[modo_texto], idioma=idioma),
             "token_pattern": None,
             "lowercase": False,
         }

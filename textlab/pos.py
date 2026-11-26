@@ -1,67 +1,34 @@
-"""Extracción de POS y palabras de contenido en español con spaCy."""
-
 from functools import lru_cache
 
-
+MODELOS = {"es": "es_core_news_sm", "en": "en_core_web_sm", "fr": "fr_core_news_sm"}
 _CATEGORIAS_CONTENIDO = {"NOUN", "PROPN", "VERB", "ADJ", "ADV"}
 
 
-@lru_cache(maxsize=1)
-def _cargar_modelo():
-    """Carga el modelo una vez y lo reutiliza en llamadas siguientes."""
+@lru_cache(maxsize=len(MODELOS))
+def _cargar_modelo(idioma="es"):
+    if idioma not in MODELOS:
+        raise ValueError(f"No hay un analizador lingüístico configurado para {idioma!r}.")
+    nombre = MODELOS[idioma]
     try:
         import spacy
-    except ImportError as error:
-        raise RuntimeError(
-            "spaCy no está instalado. Instálalo con 'python -m pip install spacy' "
-            "y luego descarga el modelo con 'python -m spacy download es_core_news_sm'."
-        ) from error
-
-    try:
-        return spacy.load("es_core_news_sm")
-    except OSError as error:
-        raise RuntimeError(
-            "No se encontró el modelo de español 'es_core_news_sm'. "
-            "Instálalo con 'python -m spacy download es_core_news_sm'."
-        ) from error
+        return spacy.load(nombre, exclude=["parser", "ner", "lemmatizer"])
+    except (ImportError, OSError) as error:
+        raise RuntimeError(f"Instala las dependencias para usar el modelo {nombre}.") from error
 
 
-def extraer_pos(texto):
-    """Devuelve las etiquetas POS de las palabras de una frase en español.
-
-    Omite los espacios y los signos de puntuación. Un texto vacío o formado
-    únicamente por espacios produce una lista vacía.
-    """
-    if not texto or texto.isspace():
+def _tokens(texto, idioma):
+    if not texto or not texto.strip():
         return []
-
-    doc = _cargar_modelo()(texto)
-    return [token.pos_ for token in doc if not token.is_space and not token.is_punct]
+    return [token for token in _cargar_modelo(idioma)(texto) if not token.is_space and not token.is_punct]
 
 
-def extraer_palabras_contenido(texto):
-    """Devuelve sustantivos, verbos, adjetivos y adverbios en orden original."""
-    if not texto or texto.isspace():
-        return []
-
-    doc = _cargar_modelo()(texto)
-    return [
-        token.text
-        for token in doc
-        if not token.is_space
-        and not token.is_punct
-        and token.pos_ in _CATEGORIAS_CONTENIDO
-    ]
+def extraer_pos(texto, idioma="es"):
+    return [token.pos_ for token in _tokens(texto, idioma)]
 
 
-def extraer_stopwords(texto):
-    """Devuelve tokens que spaCy identifica como stopwords, en orden original."""
-    if not texto or texto.isspace():
-        return []
+def extraer_palabras_contenido(texto, idioma="es"):
+    return [token.text.lower() for token in _tokens(texto, idioma) if token.pos_ in _CATEGORIAS_CONTENIDO]
 
-    doc = _cargar_modelo()(texto)
-    return [
-        token.text
-        for token in doc
-        if not token.is_space and not token.is_punct and token.is_stop
-    ]
+
+def extraer_stopwords(texto, idioma="es"):
+    return [token.text.lower() for token in _tokens(texto, idioma) if token.is_stop]

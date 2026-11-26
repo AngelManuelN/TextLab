@@ -1,5 +1,6 @@
 ﻿import numpy as np
 from collections import Counter
+from time import perf_counter
 from math import isfinite
 from numbers import Real
 
@@ -80,7 +81,7 @@ def _crear_clasificador(clasificador, C, n_arboles, alpha):
             )
 
     if clasificador == "logistica":
-        return LogisticRegression(C=valores["C"])
+        return LogisticRegression(C=valores["C"], max_iter=1000, random_state=42)
     if clasificador == "svm":
         return LinearSVC(C=valores["C"], random_state=42)
     if clasificador == "random_forest":
@@ -102,6 +103,8 @@ def entrenar_modelo(
     n_arboles=None,
     alpha=None,
     modo_texto="palabras",
+    idioma="es",
+    incluir_detalles_prueba=False,
 ):
     """Entrena un clasificador de texto con n-gramas y la representación elegida.
 
@@ -121,6 +124,9 @@ def entrenar_modelo(
     alpha: suavizado de Laplace. Solo para "naive_bayes". Valor inicial: 1.0.
         Si C, n_arboles o alpha son None se usa su valor inicial. Indicar un
         parámetro que no corresponde al clasificador lanza ValueError.
+
+    idioma: código del analizador lingüístico.
+    incluir_detalles_prueba: incluye textos evaluados y tiempo de inferencia.
 
     Devuelve un diccionario con:
       - pipeline: vectorizador + clasificador, ya entrenado.
@@ -157,6 +163,7 @@ def entrenar_modelo(
                     ngram_range=ngram_range,
                     representacion=representacion,
                     modo_texto=modo_texto,
+                    idioma=idioma,
                 ),
             ),
             ("clasificador", modelo),
@@ -193,11 +200,17 @@ def entrenar_modelo(
     pipeline.fit(textos_entrenamiento, etiquetas_entrenamiento)
 
     # 5. Predecir la parte de prueba con el pipeline ya entrenado
+    inicio = perf_counter()
     etiquetas_predichas = pipeline.predict(textos_prueba)
+    ms_por_texto = (perf_counter() - inicio) * 1000 / len(textos_prueba)
 
-    return {
+    resultado = {
         "pipeline": pipeline,
         "etiquetas_reales": list(etiquetas_prueba),
         "etiquetas_predichas": list(etiquetas_predichas),
         "validacion_cruzada": validacion_cruzada,
     }
+    if incluir_detalles_prueba:
+        resultado["textos_prueba"] = list(textos_prueba)
+        resultado["inferencia_ms_por_texto"] = ms_por_texto
+    return resultado
