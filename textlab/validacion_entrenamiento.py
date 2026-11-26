@@ -1,70 +1,86 @@
 from collections import Counter
-import math
+from sklearn.model_selection import train_test_split
 
 
-def validar_configuracion_entrenamiento(etiquetas, proporcion_prueba, folds=None):
-    # Revisa si la configuración sirve antes de entrenar; [] significa que todo está bien.
+FOLDS_PERMITIDOS = (None, 3, 5, 10)
+
+
+def validar_configuracion_entrenamiento(
+    etiquetas,
+    proporcion_prueba,
+    folds=None,
+    semilla=42,
+):
+    """Valida clases, división estratificada y folds antes de entrenar."""
     avisos = []
-    lista_etiquetas = list(etiquetas)
 
-    # Sin datos no se puede entrenar.
-    if len(lista_etiquetas) == 0:
-        return [
-            "No hay datos utilizables para entrenar. Revisa que tu archivo tenga textos y etiquetas válidas."
-        ]
+    # Revisa que haya etiquetas disponibles
+    if not etiquetas:
+        avisos.append(
+            "No hay etiquetas disponibles para entrenar. Agrega o selecciona datos válidos antes de continuar."
+        )
+        return avisos
 
-    # La prueba debe ser un porcentaje válido entre 0 y 1 (ej. 0.20).
-    if proporcion_prueba <= 0 or proporcion_prueba >= 1:
-        return [
-            f"La proporción de prueba ({proporcion_prueba}) no es válida. Usa un número entre 0 y 1, como 0.20 (20%)."
-        ]
+    # Revisa que existan al menos 2 clases distintas
+    conteo_total = Counter(etiquetas)
+    if len(conteo_total) < 2:
+        clase_unica = next(iter(conteo_total))
+        avisos.append(
+            f"Solo se encontró una clase ('{clase_unica}'). Se necesitan al menos 2 clases distintas para entrenar; agrega o selecciona datos con más clases."
+        )
+        return avisos
 
-    conteo = Counter(lista_etiquetas)
-    clases = list(conteo.keys())
+    # Revisa que la proporción de prueba esté entre 0 y 1 (exclusivo)
+    if not isinstance(proporcion_prueba, (int, float)) or isinstance(proporcion_prueba, bool) or not (0 < proporcion_prueba < 1):
+        avisos.append(
+            "La proporción de prueba debe ser un número mayor que 0 y menor que 1 (por ejemplo, 0.2 para 20 %). Ajusta ese valor antes de entrenar."
+        )
+        return avisos
 
-    # Hace falta al menos 2 clases para clasificar.
-    if len(clases) < 2:
-        return [
-            f"Solo se encontró una clase ('{clases[0]}'). Se necesitan al menos 2 clases distintas para entrenar; agrega o selecciona datos con más clases."
-        ]
+    # Revisa que folds sea uno de los valores permitidos
+    if folds not in FOLDS_PERMITIDOS:
+        avisos.append(
+            "El número de folds no es válido. Usa None, 3, 5 o 10, o quita la validación cruzada."
+        )
+        return avisos
 
-    # Cada clase necesita mínimo 2 ejemplos para repartir entre entrenar y probar.
-    clases_con_muy_pocos = []
-    for clase, total in conteo.items():
-        if total < 2:
-            clases_con_muy_pocos.append(f"'{clase}' (solo {total})")
+    # Realiza la división estratificada real con semilla provisional
+    indices = list(range(len(etiquetas)))
+    try:
+        _, indices_entrenamiento = train_test_split(
+            indices,
+            test_size=proporcion_prueba,
+            stratify=etiquetas,
+            random_state=semilla,
+        )
+    except ValueError:
+        avisos.append(
+            f"No se pudo hacer la división estratificada con una proporción de prueba de {proporcion_prueba} para {len(etiquetas)} ejemplos y {len(conteo_total)} clases (por ejemplo, hay muy pocos lugares en prueba para cubrir las clases). Ajusta el porcentaje de prueba o agrega más ejemplos."
+        )
+        return avisos
 
-    if clases_con_muy_pocos:
-        return [
-            "No alcanza para repartir bien los datos porque estas clases tienen menos de 2 ejemplos: "
-            + ", ".join(clases_con_muy_pocos)
-            + ". Consigue más ejemplos de esas clases o ajusta tus datos."
-        ]
+    # Cuenta cuántas muestras de cada clase quedaron realmente en entrenamiento
+    etiquetas_entrenamiento = [etiquetas[i] for i in indices_entrenamiento]
+    conteo_entrenamiento = Counter(etiquetas_entrenamiento)
 
-    # Calcula cuántos ejemplos de cada clase quedan en entrenamiento.
-    en_entrenamiento_por_clase = {}
-    for clase, total in conteo.items():
-        para_prueba = int(math.floor(total * proporcion_prueba))
-        if para_prueba < 1:
-            para_prueba = 1
-        if para_prueba >= total:
-            para_prueba = total - 1
+    if len(conteo_entrenamiento) < 2:
+        avisos.append(
+            "Después de dividir los datos quedó menos de 2 clases en el conjunto de entrenamiento. Ajusta la proporción de prueba o agrega más ejemplos por clase."
+        )
+        return avisos
 
-        en_entrenamiento_por_clase[clase] = total - para_prueba
-
-    # Si hay folds activos, revisa que cada clase alcance en entrenamiento.
+    # Si se pidieron folds, verifica que cada clase tenga suficientes ejemplos en entrenamiento
     if folds is not None:
-        if folds < 2:
-            return [
-                f"El número de folds ({folds}) debe ser de al menos 2, o bien desactiva los folds."
-            ]
-
-        for clase, cantidad_train in en_entrenamiento_por_clase.items():
+        for clase, cantidad_train in conteo_entrenamiento.items():
             if cantidad_train < folds:
+                # Sugiere un número de folds menor que sí alcance
+                sugeridos = [f for f in (10, 5, 3) if f < folds and f <= cantidad_train]
+                if sugeridos:
+                    sugerencia_folds = f"usar {sugeridos[0]} folds"
+                else:
+                    sugerencia_folds = "quitar los folds (dejarlo en None)"
                 avisos.append(
-                    f"La clase '{clase}' tendría más o menos {cantidad_train} ejemplo(s) en entrenamiento, "
-                    f"y eso no alcanza para {folds} folds. "
-                    f"Puedes usar menos folds (como 3), quitar los folds, bajar el porcentaje de prueba o agregar más ejemplos de '{clase}'."
+                    f"La clase '{clase}' tiene {cantidad_train} ejemplo(s) en entrenamiento, lo cual no alcanza para {folds} folds. Puedes {sugerencia_folds}, ajustar el porcentaje de prueba o agregar más ejemplos de '{clase}'."
                 )
 
     return avisos
