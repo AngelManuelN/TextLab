@@ -104,7 +104,7 @@ def show_distribution(distribution: dict) -> None:
 
 
 def show_training_settings(
-    data: pd.DataFrame, text_column: str, label_column: str, dataset_id: str
+    data: pd.DataFrame, text_column: str, label_column: str, dataset_id: str, dataset_name: str
 ) -> dict | None:
     clean_data, summary = preparar_dataset(data, text_column, label_column)
 
@@ -148,6 +148,7 @@ def show_training_settings(
         st.info("Para entrenar con esta versión, desactiva la validación cruzada.")
 
     settings = (dataset_id, text_column, label_column, proportion, features, representation, folds)
+    experiments = st.session_state.setdefault("experimentos", [])
     if st.button("Entrenar", type="primary", disabled=bool(warnings) or not supported):
         try:
             size = {"Unigramas": 1, "Bigramas": 2, "Trigramas": 3}[features]
@@ -160,15 +161,70 @@ def show_training_settings(
                     representacion={"TF-IDF": "tfidf", "Frecuencia": "frecuencia", "Binaria": "binaria"}[representation],
                 )
         except ValueError as error:
-            st.session_state.pop("resultado_entrenamiento", None)
             st.error(f"No se pudo entrenar con estos datos. {error}")
             return None
-        st.session_state["resultado_entrenamiento"] = (settings, result)
+        metrics = calculate_metrics(result["etiquetas_reales"], result["etiquetas_predichas"])
+        experiments.append(
+            {
+                "settings": settings,
+                "result": result,
+                "summary": {
+                    "Experimento": len(experiments) + 1,
+                    "Archivo": dataset_name,
+                    "Columna de texto": text_column,
+                    "Columna de etiqueta": label_column,
+                    "Clasificador": "Regresión logística",
+                    "Características": features,
+                    "Representación": representation,
+                    "Prueba (%)": test_percent,
+                    "Validación cruzada": f"{folds} folds" if folds else "Desactivada",
+                    "Textos de prueba": len(result["etiquetas_reales"]),
+                    **{name: value * 100 for name, value in metrics.items()},
+                },
+            }
+        )
 
-    saved = st.session_state.get("resultado_entrenamiento")
-    if saved is not None and saved[0] == settings:
-        return saved[1]
+    for experiment in reversed(experiments):
+        if experiment["settings"] == settings:
+            return experiment["result"]
     return None
+
+
+def calculate_metrics(actual, predicted) -> dict:
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        actual, predicted, average="macro", zero_division=0
+    )
+    return {
+        "Accuracy": accuracy_score(actual, predicted),
+        "Precisión macro": precision,
+        "Recall macro": recall,
+        "F1 macro": f1,
+    }
+
+
+def show_experiment_history() -> None:
+    st.divider()
+    st.subheader("Historial de experimentos")
+    experiments = st.session_state.get("experimentos", [])
+    if not experiments:
+        st.info("Entrena un modelo para agregarlo al historial de esta sesión.")
+        return
+
+    st.caption("Los experimentos se guardan durante esta sesión. Para comparar métricas, usa el mismo archivo y la misma división de prueba.")
+    st.dataframe(
+        [experiment["summary"] for experiment in experiments],
+        hide_index=True,
+        width="stretch",
+        column_config={
+            name: st.column_config.NumberColumn(f"{name} (%)", format="%.1f")
+            for name in ("Accuracy", "Precisión macro", "Recall macro", "F1 macro")
+        },
+        column_order=(
+            "Experimento", "Archivo", "Clasificador", "Características", "Representación",
+            "Prueba (%)", "Accuracy", "Precisión macro", "Recall macro", "F1 macro",
+            "Textos de prueba", "Validación cruzada", "Columna de texto", "Columna de etiqueta",
+        ),
+    )
 
 
 def show_results(result: dict | None) -> None:
@@ -185,19 +241,8 @@ def show_results(result: dict | None) -> None:
         return
 
     classes = unique_labels(actual, predicted)
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        actual, predicted, labels=classes, average="macro", zero_division=0
-    )
     st.caption(f"Evaluación con {len(actual)} textos de prueba. El promedio macro da el mismo peso a cada clase.")
-    for column, (name, value) in zip(
-        st.columns(4),
-        (
-            ("Accuracy", accuracy_score(actual, predicted)),
-            ("Precisión macro", precision),
-            ("Recall macro", recall),
-            ("F1 macro", f1),
-        ),
-    ):
+    for column, (name, value) in zip(st.columns(4), calculate_metrics(actual, predicted).items()):
         column.metric(name, f"{value:.1%}")
 
     st.markdown("**Matriz de confusión**")
@@ -252,7 +297,9 @@ def main() -> None:
         st.error("No se pudo leer el CSV. Revise que tenga encabezados y un separador consistente.")
         return
 
-    st.caption(f"Archivo: {'ejemplo sintético' if use_sample else uploaded.name}")
+    dataset_name = "Ejemplo sintético" if use_sample else uploaded.name
+    dataset_id = sha256(payload).hexdigest()
+    st.caption(f"Archivo: {dataset_name}")
     if data.empty or len(data.columns) < 2:
         st.warning("El CSV debe tener datos y al menos dos columnas: texto y etiqueta.")
         return
@@ -269,7 +316,7 @@ def main() -> None:
     if perfilar_dataset is None:
         st.metric("Filas", len(data))
         show_distribution(preview_distribution(data[label_column]))
-        show_results(show_training_settings(data, text_column, label_column, sha256(payload).hexdigest()))
+        show_results(show_training_settings(data, text_column, label_column, dataset_id, dataset_name))
         return
 
     try:
@@ -289,8 +336,9 @@ def main() -> None:
     ):
         column.metric(label, profile[key])
     show_distribution(profile["distribucion_clases"])
-    show_results(show_training_settings(data, text_column, label_column, sha256(payload).hexdigest()))
+    show_results(show_training_settings(data, text_column, label_column, dataset_id, dataset_name))
 
 
 if __name__ == "__main__":
     main()
+    show_experiment_history()
