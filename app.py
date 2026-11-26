@@ -74,13 +74,15 @@ def show_distribution(distribution: dict) -> None:
 
     labels = [str(label) for label in distribution]
     counts = list(distribution.values())
+    total = sum(counts)
+    textos = [f"{c} ({c / total * 100:.0f} %)" for c in counts]
     chart = go.Figure(
         go.Bar(
             y=labels,
             x=counts,
             orientation="h",
             marker_color="#6253C7",
-            text=counts,
+            text=textos,
             textposition="auto",
             hovertemplate="%{y}: %{x} textos<extra></extra>",
         )
