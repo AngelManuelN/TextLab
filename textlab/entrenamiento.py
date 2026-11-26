@@ -94,6 +94,7 @@ def entrenar_modelo(
             etiquetas_entrenamiento,
             cv=divisor,
             scoring={"accuracy": "accuracy", "f1_macro": "f1_macro"},
+            error_score="raise",
         )
         validacion_cruzada = {
             "folds": folds,

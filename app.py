@@ -31,23 +31,60 @@ El banco redujo su previsión,Negativo
 
 STYLE = """
 <style>
-[data-testid="stMainBlockContainer"] {max-width: 1200px; padding-top: 3rem;}
+[data-testid="stMainBlockContainer"] {max-width: 1240px; padding-top: 3.2rem; container-type: inline-size;}
+[data-testid="stSidebar"] {border-right: 1px solid #e0e1ed;}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] a {
+    display: inline-block; color: #443781; padding: .18rem 0; text-decoration: none;
+}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] a:hover {text-decoration: underline;}
 .textlab-header {
-    padding: clamp(1.35rem, 4vw, 2.7rem);
-    margin-bottom: 1.25rem;
-    border-radius: 1.45rem;
-    border: 1px solid #ddd8f2;
-    background: radial-gradient(ellipse at 96% 12%, #ded3fc 0%, transparent 61%),
-                linear-gradient(120deg, #e5efff, #f5f2fb 65%);
+    padding: clamp(1.5rem, 5vw, 3.4rem);
+    margin-bottom: 1.6rem;
+    border-radius: 1.55rem;
+    border: 1px solid #d6ddff;
+    background: radial-gradient(ellipse at 89% 0%, #dfccff 0%, transparent 54%),
+                radial-gradient(ellipse at 14% 125%, #bbddff 0%, transparent 66%),
+                linear-gradient(115deg, #e9f0ff, #f1edfa);
+    box-shadow: 0 10px 32px #21264f0d;
+}
+.textlab-header .textlab-brand {
+    display: inline-block; padding: .28rem .65rem; margin: 0 0 .65rem;
+    border: 1px solid #4c428233; border-radius: .48rem;
+    background: #ffffff8c; color: #3c356d;
+    font: 600 .8rem ui-monospace, monospace;
 }
 .textlab-header h1 {
-    color: #211d42; margin: 0; padding: 0; font-size: clamp(2.5rem, 6vw, 4.25rem);
+    color: #211d42; margin: 0; padding: 0; font-size: clamp(2.65rem, 7vw, 5rem);
     font-weight: 750; letter-spacing: -.065em; line-height: 1.12;
 }
-.textlab-header p {color: #4b4969; margin: .65rem 0 0; font-size: 1.04rem;}
+.textlab-header p {color: #413b61; margin: .7rem 0 0; font-size: 1.06rem; max-width: 38rem;}
 [data-testid="stMetric"] {
-    border: 1px solid #dedbed; border-radius: .85rem; padding: .85rem 1rem;
-    background: white;
+    border: 1px solid #e0def0; border-radius: .9rem; padding: .9rem 1rem;
+    background: linear-gradient(165deg, white, #f9f8ff);
+    font-variant-numeric: tabular-nums;
+}
+[data-testid="stFileUploaderDropzone"] {border: 1px dashed #a5a0cc; border-radius: .85rem;}
+[data-testid="stBaseButton-primary"]:focus-visible {
+    outline: 2px solid #4031a5; outline-offset: 3px;
+}
+@media (prefers-reduced-motion: no-preference) {
+    [data-testid="stBaseButton-primary"]:not(:disabled) {
+        transition: transform 140ms cubic-bezier(.2,.65,.3,1);
+    }
+    [data-testid="stBaseButton-primary"]:not(:disabled):active {transform: scale(.97);}
+}
+@media (max-width: 640px) {
+    [data-testid="stMainBlockContainer"] {padding-top: 2.5rem;}
+    .textlab-header {border-radius: 1.1rem;}
+}
+@container (max-width: 650px) {
+    [data-testid="stHorizontalBlock"] {
+        display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {width: 100%; min-width: 0;}
+}
+@container (max-width: 350px) {
+    [data-testid="stHorizontalBlock"] {grid-template-columns: minmax(0, 1fr);}
 }
 </style>
 """
@@ -88,16 +125,18 @@ def show_distribution(distribution: dict) -> None:
             y=labels,
             x=counts,
             orientation="h",
-            marker_color="#6253C7",
+            marker_color="#5647BD",
             text=textos,
-            textposition="auto",
-            hovertemplate="%{y}: %{x} textos<extra></extra>",
+            textposition="outside",
+            cliponaxis=False,
+            hovertemplate="%{y}<br>%{text}<extra></extra>",
         )
     )
     chart.update_layout(
         height=max(230, min(650, 130 + 35 * len(labels))),
-        margin=dict(l=8, r=24, t=12, b=12),
-        xaxis=dict(title="Textos", rangemode="tozero", dtick=1 if max(counts) < 10 else None),
+        margin=dict(l=8, r=70, t=12, b=12),
+        bargap=0.42,
+        xaxis=dict(title="Textos", rangemode="tozero", gridcolor="#e7e5f2", dtick=1 if max(counts) < 10 else None),
         yaxis=dict(type="category", autorange="reversed", automargin=True),
     )
     st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
@@ -143,13 +182,9 @@ def show_training_settings(
     for message in warnings:
         st.warning(message)
 
-    supported = folds is None
-    if not supported:
-        st.info("Para entrenar con esta versión, desactiva la validación cruzada.")
-
     settings = (dataset_id, text_column, label_column, proportion, features, representation, folds)
     experiments = st.session_state.setdefault("experimentos", [])
-    if st.button("Entrenar", type="primary", disabled=bool(warnings) or not supported):
+    if st.button("Entrenar", type="primary", disabled=bool(warnings)):
         try:
             size = {"Unigramas": 1, "Bigramas": 2, "Trigramas": 3}[features]
             with st.spinner("Entrenando la regresión logística…"):
@@ -159,6 +194,7 @@ def show_training_settings(
                     proporcion_prueba=proportion,
                     ngram_range=(size, size),
                     representacion={"TF-IDF": "tfidf", "Frecuencia": "frecuencia", "Binaria": "binaria"}[representation],
+                    folds=folds,
                 )
         except ValueError as error:
             st.error(f"No se pudo entrenar con estos datos. {error}")
@@ -267,20 +303,69 @@ def show_results(result: dict | None) -> None:
     )
     st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
 
+    st.markdown("**Desempeño por clase**")
+    precision, recall, f1, support = precision_recall_fscore_support(
+        actual, predicted, labels=classes, zero_division=0
+    )
+    per_class = go.Figure()
+    for name, values, color in (
+        ("Precisión", precision, "#6552c7"),
+        ("Recall", recall, "#2776a7"),
+        ("F1", f1, "#9372b8"),
+    ):
+        per_class.add_bar(
+            x=labels, y=values.tolist(), name=name, marker_color=color,
+            customdata=support.tolist(),
+            hovertemplate="%{x}<br>%{y:.1%}<br>Textos de prueba: %{customdata}<extra>%{fullData.name}</extra>",
+        )
+    per_class.update_layout(
+        barmode="group", height=300, margin=dict(l=8, r=12, t=12, b=12),
+        legend=dict(orientation="h", y=1.12),
+        yaxis=dict(tickformat=".0%", range=[0, 1], gridcolor="#e7e5f2"),
+        xaxis=dict(type="category", automargin=True),
+    )
+    st.plotly_chart(per_class, width="stretch", config={"displayModeBar": False})
+
+    validation = result.get("validacion_cruzada")
+    if validation:
+        st.markdown("**Validación cruzada**")
+        st.caption(f"{validation['folds']} folds sobre la parte de entrenamiento. La prueba final se evaluó por separado.")
+        columns = st.columns(2)
+        folds_chart = go.Figure()
+        for column, (key, name, color) in zip(
+            columns, (("accuracy", "Accuracy", "#6552c7"), ("f1_macro", "F1 macro", "#2776a7"))
+        ):
+            metric = validation[key]
+            column.metric(f"{name} promedio", f"{metric['promedio']:.1%}")
+            column.caption(f"Desviación estándar de {metric['desviacion'] * 100:.1f} puntos porcentuales.")
+            folds_chart.add_scatter(
+                x=list(range(1, validation["folds"] + 1)), y=metric["por_fold"],
+                name=name, mode="lines+markers", line=dict(color=color),
+                hovertemplate="Fold %{x}<br>%{y:.1%}<extra>%{fullData.name}</extra>",
+            )
+        folds_chart.update_layout(
+            height=280, margin=dict(l=8, r=12, t=12, b=12),
+            legend=dict(orientation="h", y=1.12),
+            xaxis=dict(title="Fold", dtick=1),
+            yaxis=dict(tickformat=".0%", range=[0, 1], gridcolor="#e7e5f2"),
+        )
+        st.plotly_chart(folds_chart, width="stretch", config={"displayModeBar": False})
+
 
 def main() -> None:
-    st.set_page_config(page_title="TextLab · Conjunto de datos", layout="wide")
+    st.set_page_config(page_title="TextLab · manuel_solutions", layout="wide")
     st.markdown(STYLE, unsafe_allow_html=True)
     with st.sidebar:
         st.title("TextLab")
-        st.markdown("**Conjunto de datos**")
-        st.caption("Cargue y revise los textos etiquetados para su experimento.")
+        st.caption("manuel_solutions")
+        st.markdown("[Conjunto de datos](#conjunto-de-datos)  \n[Historial](#historial-de-experimentos)")
 
     st.markdown(
-        '<header class="textlab-header"><h1>Conjunto de datos</h1>'
-        '<p>Cargue un CSV etiquetado y revise las clases antes de entrenar.</p></header>',
+        '<header class="textlab-header"><p class="textlab-brand">manuel_solutions</p><h1>TextLab</h1>'
+        '<p>Entrena y compara modelos de clasificación de textos desde tus datos.</p></header>',
         unsafe_allow_html=True,
     )
+    st.subheader("Conjunto de datos")
     uploaded = st.file_uploader(
         "Archivo CSV", type=["csv"], help="Use un archivo con encabezados en la primera fila."
     )
@@ -312,6 +397,9 @@ def main() -> None:
     if text_column == label_column:
         st.warning("Seleccione una columna distinta para el texto y otra para la etiqueta.")
         return
+
+    with st.sidebar:
+        st.markdown("[Entrenamiento](#entrenamiento)  \n[Resultados](#resultados)")
 
     if perfilar_dataset is None:
         st.metric("Filas", len(data))

@@ -49,7 +49,8 @@ def test_una_prediccion_por_cada_texto_de_prueba():
     textos, etiquetas = _datos()
     resultado = entrenar_modelo(textos, etiquetas, proporcion_prueba=0.20)
 
-    assert set(resultado) == {"pipeline", "etiquetas_reales", "etiquetas_predichas"}
+    assert set(resultado) == {"pipeline", "etiquetas_reales", "etiquetas_predichas", "validacion_cruzada"}
+    assert resultado["validacion_cruzada"] is None
     assert len(resultado["etiquetas_predichas"]) == len(resultado["etiquetas_reales"])
     # 20 % de 24 textos -> 5 textos de prueba
     assert len(resultado["etiquetas_predichas"]) == 5
