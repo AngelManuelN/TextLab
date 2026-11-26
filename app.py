@@ -5,6 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from textlab.preparacion import preparar_dataset
+
 try:
     from textlab.datos import perfilar_dataset
 except ModuleNotFoundError as error:
@@ -94,6 +96,41 @@ def show_distribution(distribution: dict) -> None:
     st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
 
 
+def show_training_settings(data: pd.DataFrame, text_column: str, label_column: str) -> None:
+    _, summary = preparar_dataset(data, text_column, label_column)
+
+    st.divider()
+    st.subheader("Entrenamiento")
+    st.write("Regresión logística · TF-IDF")
+    st.metric("Filas utilizables", summary["filas_utilizables"])
+    st.caption(
+        f"Filas excluidas · Sin datos ({summary['filas_sin_datos']}), "
+        f"duplicadas ({summary['filas_duplicadas']}) y con etiquetas contradictorias ({summary['filas_en_conflicto']})."
+    )
+    if summary["filas_utilizables"] == 0:
+        st.warning("No quedaron filas utilizables. Revise los datos o elija otras columnas.")
+        return
+
+    feature_column, test_column, validation_column = st.columns(3)
+    feature_column.selectbox(
+        "Grupos de palabras",
+        ("Unigramas", "Bigramas", "Trigramas"),
+        help="Elija palabras individuales, parejas o grupos de tres palabras consecutivas.",
+    )
+    test_percent = test_column.slider(
+        "Datos reservados para prueba", 10, 50, 20, format="%d %%"
+    )
+    test_column.caption(f"{100 - test_percent} % para entrenar y {test_percent} % para probar.")
+    validation_column.selectbox(
+        "Validación cruzada",
+        ("Desactivada", "3 folds", "5 folds", "10 folds"),
+        help="Evalúa el modelo varias veces con distintas divisiones de los datos de entrenamiento.",
+    )
+
+    st.button("Entrenar", type="primary", disabled=True)
+    st.caption("El botón se habilitará cuando se conecte el módulo de entrenamiento.")
+
+
 def main() -> None:
     st.set_page_config(page_title="TextLab · Conjunto de datos", layout="wide")
     st.markdown(STYLE, unsafe_allow_html=True)
@@ -139,6 +176,7 @@ def main() -> None:
     if perfilar_dataset is None:
         st.metric("Filas", len(data))
         show_distribution(preview_distribution(data[label_column]))
+        show_training_settings(data, text_column, label_column)
         return
 
     try:
@@ -158,6 +196,7 @@ def main() -> None:
     ):
         column.metric(label, profile[key])
     show_distribution(profile["distribucion_clases"])
+    show_training_settings(data, text_column, label_column)
 
 
 if __name__ == "__main__":
