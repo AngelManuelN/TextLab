@@ -169,6 +169,21 @@ def show_distribution(distribution: dict) -> None:
     st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
 
 
+RAPIDO = {
+    "train_classifier": "SVM lineal",
+    "train_mode": "Palabras",
+    "train_size": "Unigramas",
+    "train_representation": "TF-IDF",
+    "train_test_percent": 20,
+    "train_folds": None,
+    "train_c": 1.0,
+}
+
+
+def usar_configuracion_rapida():
+    st.session_state.update(RAPIDO)
+
+
 def show_training_settings(
     data: pd.DataFrame, text_column: str, label_column: str, dataset_id: str, dataset_name: str
 ) -> dict | None:
@@ -184,13 +199,14 @@ def show_training_settings(
         st.warning("No quedaron filas utilizables. Revise los datos o elija otras columnas.")
         return
 
-    classifier = st.selectbox("Clasificador", tuple(CLASSIFIERS), index=1)
+    st.button("Configuración rápida", icon=":material/bolt:", width="stretch", on_click=usar_configuracion_rapida)
+    classifier = st.selectbox("Clasificador", tuple(CLASSIFIERS), index=1, key="train_classifier")
     mode = st.selectbox(
-        "Características del texto", tuple(TEXT_MODES),
+        "Características del texto", tuple(TEXT_MODES), key="train_mode",
         help="Palabras usa los términos del texto. POS usa categorías gramaticales. Stopwords conserva solo palabras frecuentes. Palabras de contenido conserva sustantivos, verbos, adjetivos y adverbios, entre otros.",
     )
     if CLASSIFIERS[classifier] in {"logistica", "svm"}:
-        value = st.number_input("Regularización inversa (C)", min_value=0.001, value=1.0, step=0.1, format="%.3f")
+        value = st.number_input("Regularización inversa (C)", min_value=0.001, value=1.0, step=0.1, format="%.3f", key="train_c")
         parameter = {"C": value}
     elif CLASSIFIERS[classifier] == "random_forest":
         parameter = {"n_arboles": st.number_input("Número de árboles", min_value=1, value=100, step=1)}
@@ -200,18 +216,18 @@ def show_training_settings(
 
     features = st.selectbox(
         "Tamaño de los n-gramas",
-        tuple(NGRAMS),
+        tuple(NGRAMS), key="train_size",
         help="Agrupa uno, dos o tres elementos consecutivos del modo elegido.",
     )
-    representation = st.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"),
+    representation = st.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"), key="train_representation",
                                   help="Convierte las características en números: TF-IDF reduce el peso de términos comunes, Frecuencia cuenta apariciones y Binaria indica presencia.")
     test_percent = st.slider(
-        "Datos reservados para prueba", 10, 50, 20, format="%d %%"
+        "Datos reservados para prueba", 10, 50, 20, format="%d %%", key="train_test_percent"
     )
     st.caption(f"{100 - test_percent} % para entrenar y {test_percent} % para probar.")
     folds = st.selectbox(
         "Validación cruzada",
-        (None, 3, 5, 10),
+        (None, 3, 5, 10), key="train_folds",
         format_func=lambda value: "Desactivada" if value is None else f"{value} folds",
         help="Evalúa el modelo varias veces con distintas divisiones de los datos de entrenamiento.",
     )
@@ -251,9 +267,16 @@ def show_training_settings(
     settings = (dataset_id, text_column, label_column, proportion, features, representation, folds,
                 classifier, mode, language, tuple(parameter.items()))
     experiments = st.session_state.setdefault("experimentos", [])
+    matching = next((entry for entry in reversed(experiments) if entry["settings"] == settings), None)
+    previous = next((entry for entry in reversed(experiments) if entry["settings"][0] == dataset_id), None)
+    if matching is not None:
+        st.success(f"Modelo entrenado · Experimento {matching['summary']['Experimento']}")
+    elif previous is not None:
+        st.info("Cambiaste la configuración. Pulsa Entrenar para aplicarla. El modelo anterior está en Experimentos y Predicción.")
+
     if st.button("Entrenar", type="primary", icon=":material/play_arrow:", width="stretch", disabled=bool(warnings) or language_blocked):
-        try:
-            with st.spinner(f"Entrenando {classifier}…"):
+        with st.status("Preparando los datos…", expanded=True) as progress:
+            try:
                 result = entrenar_modelo(
                     clean_data[text_column].astype(str).tolist(),
                     clean_data[label_column].tolist(),
@@ -265,14 +288,17 @@ def show_training_settings(
                     modo_texto=TEXT_MODES[mode],
                     idioma=language_code or "es",
                     incluir_detalles_prueba=True,
+                    al_avanzar=lambda mensaje: progress.update(label=mensaje),
                     **parameter,
                 )
-        except (RuntimeError, ValueError) as error:
-            if "empty vocabulary" in str(error).lower():
-                st.error("No hay suficientes características para esa selección. Prueba con n-gramas más cortos o con el modo Palabras.")
-            else:
-                st.error(f"No se pudo entrenar con estos datos. {error}")
-            return None
+            except (RuntimeError, ValueError) as error:
+                progress.update(label="Entrenamiento interrumpido", state="error")
+                if "empty vocabulary" in str(error).lower():
+                    st.error("No hay suficientes características para esa selección. Prueba con n-gramas más cortos o con el modo Palabras.")
+                else:
+                    st.error(f"No se pudo entrenar con estos datos. {error}")
+                return None
+            progress.update(label="Modelo entrenado · abre Resultados", state="complete", expanded=False)
         metrics = calculate_metrics(result["etiquetas_reales"], result["etiquetas_predichas"])
         experiments.append(
             {

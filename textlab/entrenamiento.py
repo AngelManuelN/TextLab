@@ -105,6 +105,7 @@ def entrenar_modelo(
     modo_texto="palabras",
     idioma="es",
     incluir_detalles_prueba=False,
+    al_avanzar=None,
 ):
     """Entrena un clasificador de texto con n-gramas y la representación elegida.
 
@@ -141,6 +142,8 @@ def entrenar_modelo(
             f"folds debe ser None, 3, 5 o 10 (recibí {folds!r})."
         )
 
+    if al_avanzar is not None:
+        al_avanzar("Preparando la partición de entrenamiento y prueba…")
     modelo = _crear_clasificador(clasificador, C, n_arboles, alpha)
 
     # 1. Separar entrenamiento y prueba (reparto reproducible y balanceado por clase)
@@ -182,6 +185,8 @@ def entrenar_modelo(
                 f"ejemplo(s) en el entrenamiento. Usa menos folds o más datos."
             )
         divisor = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
+        if al_avanzar is not None:
+            al_avanzar(f"Validando el modelo · {folds} folds…")
         resultados = cross_validate(
             pipeline,  # cross_validate clona el pipeline completo en cada fold
             textos_entrenamiento,
@@ -197,9 +202,13 @@ def entrenar_modelo(
         }
 
     # 4. Ajustar el pipeline final SOLO con los datos de entrenamiento
+    if al_avanzar is not None:
+        al_avanzar("Extrayendo características y entrenando el modelo final…")
     pipeline.fit(textos_entrenamiento, etiquetas_entrenamiento)
 
     # 5. Predecir la parte de prueba con el pipeline ya entrenado
+    if al_avanzar is not None:
+        al_avanzar("Evaluando los textos reservados…")
     inicio = perf_counter()
     etiquetas_predichas = pipeline.predict(textos_prueba)
     ms_por_texto = (perf_counter() - inicio) * 1000 / len(textos_prueba)
