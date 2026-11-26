@@ -5,12 +5,20 @@ from sklearn.pipeline import Pipeline
 from textlab.caracteristicas import crear_vectorizador
 
 
-def entrenar_modelo(textos, etiquetas, proporcion_prueba=0.20):
-    """Entrena una regresión logística con unigramas + TF-IDF.
+def entrenar_modelo(
+    textos,
+    etiquetas,
+    proporcion_prueba=0.20,
+    ngram_range=(1, 1),
+    representacion="tfidf",
+):
+    """Entrena una regresión logística con n-gramas y la representación elegida.
 
     textos: lista de frases utilizables.
     etiquetas: lista de categorías correctas, en el mismo orden que textos.
     proporcion_prueba: fracción reservada para evaluar (0.20 = 20 %).
+    ngram_range: tupla (mínimo, máximo) de palabras por n-grama; (1, 1) = unigramas.
+    representacion: "tfidf", "frecuencia" o "binaria".
 
     Devuelve un diccionario con:
       - pipeline: vectorizador + clasificador, ya entrenado.
@@ -31,7 +39,13 @@ def entrenar_modelo(textos, etiquetas, proporcion_prueba=0.20):
     # 2. Armar el pipeline: primero convierte texto a números, luego clasifica
     pipeline = Pipeline(
         [
-            ("vectorizador", crear_vectorizador()),
+            (
+                "vectorizador",
+                crear_vectorizador(
+                    ngram_range=ngram_range,
+                    representacion=representacion,
+                ),
+            ),
             ("clasificador", LogisticRegression()),
         ]
     )
