@@ -1,0 +1,21 @@
+tipo_mensaje,categoria
+"Felicidades has ganado un premio de 1000 dolares haz clic aqui",spam
+"Reclama tu regalo gratis antes de que expire la oferta",spam
+"Urgente actualiza tus datos bancarios para evitar el bloqueo",spam
+"Gana dinero facil desde casa trabajando solo 2 horas",spam
+"Tu cuenta ha sido suspendida ingresa este enlace",spam
+"Oferta exclusiva compre ahora y obtenga 2 por 1",spam
+"Necesitamos verificar tu identidad responde con tus datos",spam
+"Ultima oportunidad para reclamar tu herencia millonaria",spam
+"Haz clic en este enlace para desbloquear tu tarjeta",spam
+"Premio sorpresa te espera solo por hoy responde ya",spam
+"Hola mama llegare a casa a las 8 de la noche",legitimo
+"Reunion de equipo manana a las 10 am en la sala 3",legitimo
+"Adjunto envio el reporte mensual que solicitaste",legitimo
+"Nos vemos en el cafe de la esquina a las 5",legitimo
+"Recuerda comprar pan y leche de camino a casa",legitimo
+"El proyecto fue aprobado por el cliente",legitimo
+"Te envie un correo con los detalles de la cita",legitimo
+"Quedamos a la espera de tu confirmacion",legitimo
+"El vuelo llega a las 14:30 a la terminal 2",legitimo
+"Por favor revisa el documento cuando tengas tiempo",legitimo
