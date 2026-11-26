@@ -52,3 +52,16 @@ def extraer_palabras_contenido(texto):
         and not token.is_punct
         and token.pos_ in _CATEGORIAS_CONTENIDO
     ]
+
+
+def extraer_stopwords(texto):
+    """Devuelve tokens que spaCy identifica como stopwords, en orden original."""
+    if not texto or texto.isspace():
+        return []
+
+    doc = _cargar_modelo()(texto)
+    return [
+        token.text
+        for token in doc
+        if not token.is_space and not token.is_punct and token.is_stop
+    ]
