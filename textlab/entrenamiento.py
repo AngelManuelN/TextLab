@@ -1,13 +1,34 @@
 ﻿import numpy as np
 from collections import Counter
 
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_validate, train_test_split
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
 
 from textlab.caracteristicas import crear_vectorizador
 
 FOLDS_PERMITIDOS = (3, 5, 10)
+
+# Valores que acepta el parámetro "clasificador" (el primero es el predeterminado).
+CLASIFICADORES_PERMITIDOS = ("logistica", "svm", "random_forest", "naive_bayes")
+
+# Qué parámetro propio aplica a cada clasificador.
+PARAMETROS_POR_CLASIFICADOR = {
+    "logistica": ("C",),
+    "svm": ("C",),
+    "random_forest": ("n_arboles",),
+    "naive_bayes": ("alpha",),
+}
+
+# Valores iniciales: se usan cuando no se indica el parámetro.
+VALORES_INICIALES = {
+    "C": 1.0,
+    "n_arboles": 100,
+    "alpha": 1.0,
+}
 
 
 def _resumir(valores):
@@ -20,6 +41,52 @@ def _resumir(valores):
     }
 
 
+def _crear_clasificador(clasificador, C, n_arboles, alpha):
+    """Crea el clasificador elegido validando nombre y parámetros."""
+    if clasificador not in CLASIFICADORES_PERMITIDOS:
+        raise ValueError(
+            "clasificador debe ser uno de "
+            f"{', '.join(CLASIFICADORES_PERMITIDOS)} (recibí {clasificador!r})."
+        )
+
+    indicados = {"C": C, "n_arboles": n_arboles, "alpha": alpha}
+    validos = PARAMETROS_POR_CLASIFICADOR[clasificador]
+
+    for nombre, valor in indicados.items():
+        if valor is not None and nombre not in validos:
+            raise ValueError(
+                f"El parámetro '{nombre}' no aplica al clasificador "
+                f"'{clasificador}'. Parámetros válidos: {', '.join(validos)}."
+            )
+
+    valores = {
+        nombre: (indicados[nombre] if indicados[nombre] is not None
+                 else VALORES_INICIALES[nombre])
+        for nombre in validos
+    }
+
+    if "C" in valores and not valores["C"] > 0:
+        raise ValueError(f"C debe ser mayor que 0 (recibí {valores['C']!r}).")
+    if "alpha" in valores and not valores["alpha"] > 0:
+        raise ValueError(f"alpha debe ser mayor que 0 (recibí {valores['alpha']!r}).")
+    if "n_arboles" in valores:
+        n = valores["n_arboles"]
+        if isinstance(n, bool) or not isinstance(n, int) or n < 1:
+            raise ValueError(
+                f"n_arboles debe ser un entero mayor o igual a 1 (recibí {n!r})."
+            )
+
+    if clasificador == "logistica":
+        return LogisticRegression(C=valores["C"])
+    if clasificador == "svm":
+        return LinearSVC(C=valores["C"], random_state=42)
+    if clasificador == "random_forest":
+        return RandomForestClassifier(
+            n_estimators=valores["n_arboles"], random_state=42
+        )
+    return MultinomialNB(alpha=valores["alpha"])
+
+
 def entrenar_modelo(
     textos,
     etiquetas,
@@ -27,8 +94,12 @@ def entrenar_modelo(
     ngram_range=(1, 1),
     representacion="tfidf",
     folds=None,
+    clasificador="logistica",
+    C=None,
+    n_arboles=None,
+    alpha=None,
 ):
-    """Entrena una regresión logística con n-gramas y la representación elegida.
+    """Entrena un clasificador de texto con n-gramas y la representación elegida.
 
     textos: lista de frases utilizables.
     etiquetas: lista de categorías correctas, en el mismo orden que textos.
@@ -37,6 +108,14 @@ def entrenar_modelo(
     representacion: "tfidf", "frecuencia" o "binaria".
     folds: None (sin validación cruzada), 3, 5 o 10. La validación cruzada
         estratificada usa solo la parte de entrenamiento.
+    clasificador: "logistica" (predeterminado), "svm", "random_forest" o
+        "naive_bayes".
+    C: fuerza de regularización inversa. Solo para "logistica" y "svm".
+        Valor inicial: 1.0.
+    n_arboles: número de árboles. Solo para "random_forest". Valor inicial: 100.
+    alpha: suavizado de Laplace. Solo para "naive_bayes". Valor inicial: 1.0.
+        Si C, n_arboles o alpha son None se usa su valor inicial. Indicar un
+        parámetro que no corresponde al clasificador lanza ValueError.
 
     Devuelve un diccionario con:
       - pipeline: vectorizador + clasificador, ya entrenado.
@@ -50,6 +129,8 @@ def entrenar_modelo(
         raise ValueError(
             f"folds debe ser None, 3, 5 o 10 (recibí {folds!r})."
         )
+
+    modelo = _crear_clasificador(clasificador, C, n_arboles, alpha)
 
     # 1. Separar entrenamiento y prueba (reparto reproducible y balanceado por clase)
     textos_entrenamiento, textos_prueba, etiquetas_entrenamiento, etiquetas_prueba = (
@@ -72,7 +153,7 @@ def entrenar_modelo(
                     representacion=representacion,
                 ),
             ),
-            ("clasificador", LogisticRegression()),
+            ("clasificador", modelo),
         ]
     )
 
