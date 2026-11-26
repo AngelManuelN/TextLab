@@ -31,8 +31,7 @@ TEXT_MODES = {
 }
 
 LANGUAGES = {"Español": "es", "Inglés": "en", "Francés": "fr"}
-NGRAMS = {"Unigramas y bigramas": (1, 2), "Unigramas": (1, 1),
-          "Bigramas": (2, 2), "Trigramas": (3, 3)}
+NGRAMS = {"Unigramas": (1, 1), "Bigramas": (2, 2), "Trigramas": (3, 3)}
 
 
 STYLE = """
