@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from textlab.preparacion import preparar_dataset
+from textlab.validacion_entrenamiento import validar_configuracion_entrenamiento
 
 try:
     from textlab.datos import perfilar_dataset
@@ -99,11 +100,11 @@ def show_distribution(distribution: dict) -> None:
 
 
 def show_training_settings(data: pd.DataFrame, text_column: str, label_column: str) -> None:
-    _, summary = preparar_dataset(data, text_column, label_column)
+    clean_data, summary = preparar_dataset(data, text_column, label_column)
 
     st.divider()
     st.subheader("Entrenamiento")
-    st.write("Regresión logística · TF-IDF")
+    st.write("Regresión logística")
     st.metric("Filas utilizables", summary["filas_utilizables"])
     st.caption(
         f"Filas excluidas · Sin datos ({summary['filas_sin_datos']}), "
@@ -113,21 +114,26 @@ def show_training_settings(data: pd.DataFrame, text_column: str, label_column: s
         st.warning("No quedaron filas utilizables. Revise los datos o elija otras columnas.")
         return
 
-    feature_column, test_column, validation_column = st.columns(3)
+    feature_column, representation_column, test_column, validation_column = st.columns(4)
     feature_column.selectbox(
         "Grupos de palabras",
         ("Unigramas", "Bigramas", "Trigramas"),
         help="Elija palabras individuales, parejas o grupos de tres palabras consecutivas.",
     )
+    representation_column.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"))
     test_percent = test_column.slider(
         "Datos reservados para prueba", 10, 50, 20, format="%d %%"
     )
     test_column.caption(f"{100 - test_percent} % para entrenar y {test_percent} % para probar.")
-    validation_column.selectbox(
+    folds = validation_column.selectbox(
         "Validación cruzada",
-        ("Desactivada", "3 folds", "5 folds", "10 folds"),
+        (None, 3, 5, 10),
+        format_func=lambda value: "Desactivada" if value is None else f"{value} folds",
         help="Evalúa el modelo varias veces con distintas divisiones de los datos de entrenamiento.",
     )
+
+    for message in validar_configuracion_entrenamiento(clean_data[label_column], test_percent / 100, folds):
+        st.warning(message)
 
     st.button("Entrenar", type="primary", disabled=True)
     st.caption("El botón se habilitará cuando se conecte el módulo de entrenamiento.")
