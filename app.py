@@ -9,6 +9,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_f
 from sklearn.utils.multiclass import unique_labels
 
 from textlab.entrenamiento import entrenar_modelo
+from textlab.prediccion import predecir_lote
 from textlab.preparacion import preparar_dataset
 from textlab.validacion_entrenamiento import validar_configuracion_entrenamiento
 
@@ -28,6 +29,19 @@ La empresa reportó pérdidas,Negativo
 Las ventas bajaron este mes,Negativo
 El banco redujo su previsión,Negativo
 """
+
+CLASSIFIERS = {
+    "Regresión logística": "logistica",
+    "SVM lineal": "svm",
+    "Random Forest": "random_forest",
+    "Naive Bayes": "naive_bayes",
+}
+TEXT_MODES = {
+    "Palabras": "palabras",
+    "Etiquetas gramaticales (POS)": "pos",
+    "Stopwords": "stopwords",
+    "Palabras de contenido": "palabras_contenido",
+}
 
 STYLE = """
 <style>
@@ -149,7 +163,6 @@ def show_training_settings(
 
     st.divider()
     st.subheader("Entrenamiento")
-    st.write("Regresión logística")
     st.metric("Filas utilizables", summary["filas_utilizables"])
     st.caption(
         f"Filas excluidas · Sin datos ({summary['filas_sin_datos']}), "
@@ -159,11 +172,26 @@ def show_training_settings(
         st.warning("No quedaron filas utilizables. Revise los datos o elija otras columnas.")
         return
 
+    model_column, mode_column, parameter_column = st.columns(3)
+    classifier = model_column.selectbox("Clasificador", tuple(CLASSIFIERS))
+    mode = mode_column.selectbox(
+        "Características del texto", tuple(TEXT_MODES),
+        help="Los modos POS, stopwords y palabras de contenido usan el modelo lingüístico de español.",
+    )
+    if CLASSIFIERS[classifier] in {"logistica", "svm"}:
+        value = parameter_column.number_input("Regularización inversa (C)", min_value=0.001, value=1.0, step=0.1, format="%.3f")
+        parameter = {"C": value}
+    elif CLASSIFIERS[classifier] == "random_forest":
+        parameter = {"n_arboles": parameter_column.number_input("Número de árboles", min_value=1, value=100, step=1)}
+    else:
+        value = parameter_column.number_input("Suavizado (alpha)", min_value=0.001, value=1.0, step=0.1, format="%.3f")
+        parameter = {"alpha": value}
+
     feature_column, representation_column, test_column, validation_column = st.columns(4)
     features = feature_column.selectbox(
-        "Grupos de palabras",
+        "Tamaño de los n-gramas",
         ("Unigramas", "Bigramas", "Trigramas"),
-        help="Elija palabras individuales, parejas o grupos de tres palabras consecutivas.",
+        help="Agrupa uno, dos o tres elementos consecutivos del modo elegido.",
     )
     representation = representation_column.selectbox("Representación", ("TF-IDF", "Frecuencia", "Binaria"))
     test_percent = test_column.slider(
@@ -182,12 +210,13 @@ def show_training_settings(
     for message in warnings:
         st.warning(message)
 
-    settings = (dataset_id, text_column, label_column, proportion, features, representation, folds)
+    settings = (dataset_id, text_column, label_column, proportion, features, representation, folds,
+                classifier, mode, tuple(parameter.items()))
     experiments = st.session_state.setdefault("experimentos", [])
     if st.button("Entrenar", type="primary", disabled=bool(warnings)):
         try:
             size = {"Unigramas": 1, "Bigramas": 2, "Trigramas": 3}[features]
-            with st.spinner("Entrenando la regresión logística…"):
+            with st.spinner(f"Entrenando {classifier}…"):
                 result = entrenar_modelo(
                     clean_data[text_column].astype(str).tolist(),
                     clean_data[label_column].tolist(),
@@ -195,9 +224,15 @@ def show_training_settings(
                     ngram_range=(size, size),
                     representacion={"TF-IDF": "tfidf", "Frecuencia": "frecuencia", "Binaria": "binaria"}[representation],
                     folds=folds,
+                    clasificador=CLASSIFIERS[classifier],
+                    modo_texto=TEXT_MODES[mode],
+                    **parameter,
                 )
-        except ValueError as error:
-            st.error(f"No se pudo entrenar con estos datos. {error}")
+        except (RuntimeError, ValueError) as error:
+            if "empty vocabulary" in str(error).lower():
+                st.error("No hay suficientes características para esa selección. Prueba con n-gramas más cortos o con el modo Palabras.")
+            else:
+                st.error(f"No se pudo entrenar con estos datos. {error}")
             return None
         metrics = calculate_metrics(result["etiquetas_reales"], result["etiquetas_predichas"])
         experiments.append(
@@ -209,8 +244,10 @@ def show_training_settings(
                     "Archivo": dataset_name,
                     "Columna de texto": text_column,
                     "Columna de etiqueta": label_column,
-                    "Clasificador": "Regresión logística",
-                    "Características": features,
+                    "Clasificador": classifier,
+                    "Características": mode,
+                    "N-gramas": features,
+                    "Parámetros": ", ".join(f"{key}={value}" for key, value in parameter.items()),
                     "Representación": representation,
                     "Prueba (%)": test_percent,
                     "Validación cruzada": f"{folds} folds" if folds else "Desactivada",
@@ -256,11 +293,64 @@ def show_experiment_history() -> None:
             for name in ("Accuracy", "Precisión macro", "Recall macro", "F1 macro")
         },
         column_order=(
-            "Experimento", "Archivo", "Clasificador", "Características", "Representación",
+            "Experimento", "Archivo", "Clasificador", "Características", "N-gramas", "Representación",
             "Prueba (%)", "Accuracy", "Precisión macro", "Recall macro", "F1 macro",
-            "Textos de prueba", "Validación cruzada", "Columna de texto", "Columna de etiqueta",
+            "Textos de prueba", "Validación cruzada", "Parámetros", "Columna de texto", "Columna de etiqueta",
         ),
     )
+
+
+def show_predictions() -> None:
+    st.divider()
+    st.subheader("Predicción")
+    experiments = st.session_state.get("experimentos", [])
+    if not experiments:
+        st.info("Entrena un modelo para usarlo en una predicción.")
+        return
+
+    summaries = [entry["summary"] for entry in experiments]
+    chosen = st.selectbox(
+        "Modelo entrenado", range(len(experiments)), index=len(experiments) - 1,
+        format_func=lambda i: f"Experimento {summaries[i]['Experimento']} · {summaries[i]['Clasificador']} · {summaries[i]['Archivo']}",
+    )
+    predictor = experiments[chosen]["result"]["pipeline"].predict
+    single, batch = st.tabs(["Texto individual", "Archivo CSV"])
+    with single:
+        text = st.text_area("Texto por clasificar")
+        if st.button("Predecir texto", disabled=not text.strip()):
+            prediction = predecir_lote([text], predictor)[0]["etiqueta"]
+            st.success(f"Clase predicha: {prediction}")
+
+    with batch:
+        upload = st.file_uploader("CSV de textos sin etiquetas", type=["csv"], key="prediction_upload")
+        if upload is None:
+            return
+        payload = upload.getvalue()
+        try:
+            data = read_csv(payload)
+        except (UnicodeError, pd.errors.EmptyDataError, pd.errors.ParserError):
+            st.error("No se pudo leer el CSV de predicción. Revisa los encabezados y el separador.")
+            return
+        if data.empty:
+            st.warning("El CSV de predicción debe contener al menos un texto.")
+            return
+        text_column = st.selectbox("Columna de texto para predecir", data.columns)
+        texts = data[text_column].fillna("").astype(str)
+        has_empty = texts.str.strip().eq("").any()
+        if has_empty:
+            st.warning("La columna seleccionada contiene textos vacíos. Elige otra columna o corrige el CSV.")
+        key = (chosen, sha256(payload).hexdigest(), text_column)
+        if st.button("Predecir CSV", disabled=bool(has_empty)):
+            predictions = predecir_lote(texts.tolist(), predictor)
+            st.session_state["prediccion_lote"] = (key, pd.DataFrame(predictions).rename(columns={"etiqueta": "prediccion"}))
+        cached = st.session_state.get("prediccion_lote")
+        if cached is not None and cached[0] == key:
+            output = cached[1]
+            st.dataframe(output, hide_index=True, width="stretch")
+            st.download_button(
+                "Descargar predicciones", output.to_csv(index=False).encode("utf-8-sig"),
+                file_name="textlab-predicciones.csv", mime="text/csv", on_click="ignore",
+            )
 
 
 def show_results(result: dict | None) -> None:
@@ -358,7 +448,7 @@ def main() -> None:
     with st.sidebar:
         st.title("TextLab")
         st.caption("manuel_solutions")
-        st.markdown("[Conjunto de datos](#conjunto-de-datos)  \n[Historial](#historial-de-experimentos)")
+        st.markdown("[Conjunto de datos](#conjunto-de-datos)  \n[Historial](#historial-de-experimentos)  \n[Predicción](#prediccion)")
 
     st.markdown(
         '<header class="textlab-header"><p class="textlab-brand">manuel_solutions</p><h1>TextLab</h1>'
@@ -430,3 +520,4 @@ def main() -> None:
 if __name__ == "__main__":
     main()
     show_experiment_history()
+    show_predictions()

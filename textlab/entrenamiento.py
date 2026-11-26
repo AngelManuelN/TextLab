@@ -1,5 +1,7 @@
 ﻿import numpy as np
 from collections import Counter
+from math import isfinite
+from numbers import Real
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -65,10 +67,11 @@ def _crear_clasificador(clasificador, C, n_arboles, alpha):
         for nombre in validos
     }
 
-    if "C" in valores and not valores["C"] > 0:
-        raise ValueError(f"C debe ser mayor que 0 (recibí {valores['C']!r}).")
-    if "alpha" in valores and not valores["alpha"] > 0:
-        raise ValueError(f"alpha debe ser mayor que 0 (recibí {valores['alpha']!r}).")
+    for nombre in ("C", "alpha"):
+        if nombre in valores:
+            valor = valores[nombre]
+            if isinstance(valor, bool) or not isinstance(valor, Real) or not isfinite(valor) or valor <= 0:
+                raise ValueError(f"{nombre} debe ser un número positivo y finito (recibí {valor!r}).")
     if "n_arboles" in valores:
         n = valores["n_arboles"]
         if isinstance(n, bool) or not isinstance(n, int) or n < 1:
@@ -98,6 +101,7 @@ def entrenar_modelo(
     C=None,
     n_arboles=None,
     alpha=None,
+    modo_texto="palabras",
 ):
     """Entrena un clasificador de texto con n-gramas y la representación elegida.
 
@@ -106,6 +110,7 @@ def entrenar_modelo(
     proporcion_prueba: fracción reservada para evaluar (0.20 = 20 %).
     ngram_range: tupla (mínimo, máximo) de palabras por n-grama; (1, 1) = unigramas.
     representacion: "tfidf", "frecuencia" o "binaria".
+    modo_texto: "palabras", "pos", "stopwords" o "palabras_contenido".
     folds: None (sin validación cruzada), 3, 5 o 10. La validación cruzada
         estratificada usa solo la parte de entrenamiento.
     clasificador: "logistica" (predeterminado), "svm", "random_forest" o
@@ -151,6 +156,7 @@ def entrenar_modelo(
                 crear_vectorizador(
                     ngram_range=ngram_range,
                     representacion=representacion,
+                    modo_texto=modo_texto,
                 ),
             ),
             ("clasificador", modelo),
