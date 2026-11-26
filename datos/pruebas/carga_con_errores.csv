@@ -1,0 +1,10 @@
+texto,etiqueta,source
+"El parque estaba lleno de flores y sol",positivo,fuente_a
+"El café de la esquina es mi favorito",positivo,fuente_b
+"La biblioteca tiene una colección excelente",positivo,fuente_c
+"El tráfico fue un caos esta mañana",negativo,fuente_d
+"La película tuvo un final predecible",negativo,fuente_e
+"El restaurante cerró antes de tiempo",negativo,fuente_f
+"El café de la esquina es mi favorito",positivo,fuente_b
+,negativo,fuente_g
+"El museo abre los domingos",,fuente_h
