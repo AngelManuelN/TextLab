@@ -143,18 +143,21 @@ def show_training_settings(
     for message in warnings:
         st.warning(message)
 
-    supported = features == "Unigramas" and representation == "TF-IDF" and folds is None
+    supported = folds is None
     if not supported:
-        st.info("Para este primer experimento elige Unigramas, TF-IDF y validación cruzada desactivada.")
+        st.info("Para entrenar con esta versión, desactiva la validación cruzada.")
 
     settings = (dataset_id, text_column, label_column, proportion, features, representation, folds)
     if st.button("Entrenar", type="primary", disabled=bool(warnings) or not supported):
         try:
+            size = {"Unigramas": 1, "Bigramas": 2, "Trigramas": 3}[features]
             with st.spinner("Entrenando la regresión logística…"):
                 result = entrenar_modelo(
                     clean_data[text_column].astype(str).tolist(),
                     clean_data[label_column].tolist(),
                     proporcion_prueba=proportion,
+                    ngram_range=(size, size),
+                    representacion={"TF-IDF": "tfidf", "Frecuencia": "frecuencia", "Binaria": "binaria"}[representation],
                 )
         except ValueError as error:
             st.session_state.pop("resultado_entrenamiento", None)
