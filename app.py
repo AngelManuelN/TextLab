@@ -388,7 +388,7 @@ def show_predictions() -> None:
             except ValueError as error:
                 st.error(f"No se pudo clasificar el texto. {error}")
             else:
-                st.success(f"Clase predicha: {prediction}", icon=":material/check_circle:")
+                st.info(f"Clase predicha: {prediction}", icon=":material/label:")
 
     with batch:
         upload = st.file_uploader("CSV de textos sin etiquetas", type=["csv"], key="prediction_upload")
@@ -540,9 +540,22 @@ def show_errors(result: dict | None) -> None:
         st.success("El modelo acertó en todos los textos de prueba.")
         return
     labels = sorted(set(errors["Clase real"]).union(errors["Clase predicha"]), key=str)
-    chosen = st.selectbox("Filtrar por clase", [None, *labels], format_func=lambda x: "Todas" if x is None else str(x))
+    class_column, direction_column = st.columns(2)
+    chosen = class_column.selectbox(
+        "Filtrar por clase", [None, *labels], format_func=lambda x: "Todas" if x is None else str(x),
+    )
     if chosen is not None:
-        errors = errors.loc[errors["Clase real"].eq(chosen) | errors["Clase predicha"].eq(chosen)]
+        direction = direction_column.selectbox(
+            "Buscar en", ["Clase real", "Clase predicha", "Ambas"],
+            help="Clase real muestra casos que el modelo pasó por alto. Clase predicha muestra casos a los que asignó esa etiqueta por error.",
+        )
+        if direction == "Ambas":
+            errors = errors.loc[errors["Clase real"].eq(chosen) | errors["Clase predicha"].eq(chosen)]
+        else:
+            errors = errors.loc[errors[direction].eq(chosen)]
+    st.caption(f"Errores mostrados: {len(errors)}")
+    if errors.empty:
+        return
     st.dataframe(errors, width="stretch", hide_index=True)
     with st.expander("Leer un texto completo", icon=":material/article:"):
         selected = st.selectbox("Fila de prueba", errors.index.tolist(), format_func=lambda value: f"{value + 1}")
