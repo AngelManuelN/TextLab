@@ -33,7 +33,7 @@ Si la validación pide más ejemplos por clase, reduce los folds o carga más da
 
 Cada sesión conserva sus propios CSV, experimentos y modelos entrenados. En una instalación compartida, todas las personas ven la misma aplicación. Para recuperar resultados fuera de tu sesión, puedes descargar las predicciones por lote.
 
-Los CSV admiten UTF-8, UTF-16 o UTF-32 con marca de codificación y Windows-1252.
+Los nombres de columna son libres. En Formato de importación puedes ajustar el separador, indicar si hay encabezados y tratar las comillas como texto literal. También puedes cargar TSV o TXT delimitados. Los archivos admiten UTF-8, UTF-16 o UTF-32 con marca de codificación y Windows-1252.
 
 ## Datos de prueba
 

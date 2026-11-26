@@ -38,98 +38,60 @@ NGRAMS = {"Unigramas": (1, 1), "Bigramas": (2, 2), "Trigramas": (3, 3)}
 
 STYLE = """
 <style>
-[data-testid="stMainBlockContainer"] {max-width: 1450px; padding-top: 3rem; container-type: inline-size;}
-[data-testid="stSidebar"] {border-right: 1px solid #294a73;}
-.textlab-header {
-    padding: clamp(1.3rem, 3.4vw, 3rem);
-    border: 1px solid #427ab0;
-    border-radius: 1.45rem;
-    background: radial-gradient(ellipse at 90% 0%, #176ed0 0%, transparent 62%),
-                radial-gradient(ellipse at 84% 130%, #0987af 0%, transparent 68%),
-                linear-gradient(115deg, #051328, #09275b);
-    box-shadow: inset 0 1px #c1e8ff69, 0 12px 32px #03132533;
-}
-.textlab-header h1 {color: #f3f9ff; margin: 0; padding: 0; font-size: clamp(2.55rem, 6vw, 4.4rem);
-    font-weight: 750; letter-spacing: -.065em; line-height: 1.05;}
-.textlab-header p {color: #c1e8ff; margin: .55rem 0 0; max-width: 38rem;}
-.textlab-header .textlab-brand {color: #a9d6fd; margin: 0 0 .62rem; font-size: .85rem;}
-[data-testid="stMetric"] {
-    border: 1px solid #365277; border-radius: .9rem; padding: .85rem 1rem;
-    background: linear-gradient(155deg, #172d4b, #101f35);
-    font-variant-numeric: tabular-nums;
-}
-[data-testid="stFileUploaderDropzone"] {border: 1px dashed #6583a8; border-radius: .85rem;}
-[data-testid="stExpander"] details {border-color: #365277;}
-[data-testid="stExpander"] summary:hover {background: #1c3859;}
-@media (prefers-reduced-motion: no-preference) {
-    [data-testid="stExpander"] details[open] > div {animation: textlab-reveal 180ms ease-out;}
-    @keyframes textlab-reveal {from {opacity: .55; transform: translateY(-3px);} to {opacity: 1; transform: none;}}
-}
-@container (max-width: 760px) {
-    [data-testid="stHorizontalBlock"] {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));}
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {width: 100%; min-width: 0;}
-}
-@container (max-width: 520px) {
-    [data-testid="stHorizontalBlock"] {grid-template-columns: minmax(0, 1fr);}
-}
-
 [data-testid="stAppViewContainer"] {
-    background: radial-gradient(ellipse at 95% 0%, #16223a 0%, transparent 42%), #101319;
+    background: radial-gradient(ellipse at 95% 0%, #d8e7fe 0%, transparent 50%), #edf3fa;
 }
-[data-testid="stSidebar"] {background: #141821; border-color: #2a3443;}
-[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap: .76rem;}
-[data-testid="stHeader"] {background: #101319bb; backdrop-filter: blur(12px);}
-.textlab-header {
-    position: relative; overflow: hidden; padding: 1.65rem 2rem; border-color: #435779;
-    background: radial-gradient(ellipse at 95% 120%, #25558b 0%, transparent 64%),
-                linear-gradient(115deg, #151a24, #1c2841);
-}
-.textlab-header .textlab-mark {
-    display: grid; place-items: center; width: 3rem; height: 3rem; margin-bottom: .8rem;
-    border-radius: .95rem; color: #f4fbff; font-size: 1.6rem;
-    border: 1px solid #a6ccff88;
-    background: linear-gradient(145deg,#89c1ff,#2957c7 62%,#624aff);
-    box-shadow: inset 0 1px #e4f2ff, 0 6px 22px #245d9477;
-}
-[data-testid="stMetric"] {
-    border-color:#344256; background: linear-gradient(150deg,#202938,#171d28);
-    box-shadow: inset 0 1px #ffffff13; min-height: 5.4rem;
-}
-.tl-kpi {
-    padding: .95rem 1.05rem; border: 1px solid #354258; border-radius: 1.05rem;
-    background: linear-gradient(150deg,#212b3e,#171c26); min-height: 8.2rem;
-    box-shadow: inset 0 1px #ffffff17, 0 8px 20px #070b132b;
-}
-.tl-kpi.is-primary {background: radial-gradient(ellipse at 100% 0%,#254e83,transparent 80%),#19253d;}
-.tl-kpi-icon {
-    display:grid;place-items:center;width:1.9rem;height:1.9rem;border-radius:.6rem;margin-bottom:.42rem;
-    background:linear-gradient(145deg,#87bcff55,#6753ff55);color:#cde5ff;border:1px solid #94c2ff55;
-}
-.tl-kpi-label {color:#b9c9df;font-size:.82rem;}
-.tl-kpi-value {display:block;font-size:clamp(1.5rem,3cqw,2.1rem);font-weight:700;color:#f1f7ff;
+[data-testid="stHeader"] {background:#edf3fad9;backdrop-filter:blur(12px);}
+[data-testid="stMainBlockContainer"] {max-width:1440px;padding-top:2.8rem;container-type:inline-size;}
+[data-testid="stSidebar"] {background:linear-gradient(168deg,#102e58,#102447);border-right:1px solid #264975;}
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap:.68rem;}
+.tl-brand {display:flex;align-items:center;gap:.7rem;padding:.3rem 0 .8rem;color:#fff;}
+.tl-brand strong {display:block;font-size:1.25rem;line-height:1.25;}
+.tl-brand small {display:block;color:#b7cbee;font-size:.76rem;}
+.tl-symbol {display:grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:.7rem;color:#fff;
+    background:linear-gradient(145deg,#8dbdff,#3e68c8);box-shadow:inset 0 1px #e8f2ff88;font-size:1.2rem;}
+.textlab-header {display:flex;align-items:center;gap:.8rem;padding:.75rem 1.05rem;border-radius:1.2rem;
+    background:#fff;border:1px solid #dbe6f4;box-shadow:0 4px 18px #254b7710;}
+.textlab-header h1 {font-size:1.52rem;letter-spacing:-.04em;line-height:1.1;padding:0;margin:0;color:#142b4f;}
+.textlab-header p {font-size:.83rem;margin:.22rem 0 0;color:#506883;}
+.tl-intro,.tl-format {border:1px solid #d7e4f3;border-radius:1.2rem;padding:1.2rem 1.35rem;min-height:12.2rem;}
+.tl-intro {position:relative;overflow:hidden;background:linear-gradient(140deg,#fff 35%,#e2eeff);}
+.tl-intro::after {content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-radial-gradient(ellipse at 100% 105%,transparent 0 21px,#486fba28 23px 24px,transparent 26px 41px);
+    mask-image:linear-gradient(90deg,transparent 58%,black);}
+.tl-intro h2,.tl-format h2 {font-size:1.3rem;line-height:1.2;padding:0;margin:.65rem 0 .46rem;}
+.tl-intro p,.tl-format p {max-width:31rem;margin:0;line-height:1.5;font-size:.94rem;}
+.tl-format {background:#142e55;color:#e9f2ff;}
+.tl-format h2 {color:#fff;}
+[data-testid="stMetric"],.tl-kpi {border:1px solid #dbe5f2;border-radius:1rem;padding:.83rem 1rem;
+    background:linear-gradient(145deg,#fff,#f1f6ff);box-shadow:0 4px 14px #254b770c;}
+.tl-kpi {min-height:7.25rem;}
+.tl-kpi.is-primary {background:linear-gradient(145deg,#eaf3ff,#d9e8fd);}
+.tl-kpi-icon {display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:.55rem;margin-bottom:.3rem;
+    background:linear-gradient(145deg,#e6f2ff,#c5d9fb);color:#284b9a;border:1px solid #c6daf7;}
+.tl-kpi-label {color:#405b7e;font-size:.82rem;}
+.tl-kpi-value {display:block;font-size:clamp(1.45rem,3cqw,2.1rem);font-weight:700;color:#142c52;
     line-height:1.25;font-variant-numeric:tabular-nums;letter-spacing:-.03em;}
-[data-testid="stFileUploaderDropzone"] {background: #1a2436; border-color: #547298;}
-[data-testid="stTextArea"] textarea {
-    background:#131a27; border:1px solid #374963; border-radius:.85rem; padding:1rem;
-    line-height:1.55; overflow-wrap:anywhere; color:#edf5ff;
+[data-testid="stFileUploaderDropzone"] {border:1px dashed #819ac0;border-radius:.9rem;}
+[data-testid="stTextArea"] textarea {border-radius:.8rem;line-height:1.55;overflow-wrap:anywhere;}
+[data-testid="stBaseButton-primary"] {border-radius:.8rem;font-weight:700;}
+[data-testid="stExpander"] details {background:#fff;border:1px solid #d7e3f2;border-radius:1rem;}
+[data-testid="stSidebar"] [data-testid="stExpander"] details {background:#183963;border-color:#385580;}
+[data-testid="stExpander"] summary {padding:.77rem .95rem;}
+[data-testid="stTabs"] [role="tablist"] {gap:.3rem;overflow-x:auto;}
+[data-testid="stTabs"] [role="tab"] {padding-inline:.7rem;white-space:nowrap;}
+@container (max-width:720px) {
+    [data-testid="stHorizontalBlock"] {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {width:100%;min-width:0;}
 }
-[data-testid="stTextArea"] textarea:focus {outline:2px solid #85b8ff; outline-offset:2px;}
-[data-testid="stBaseButton-primary"] {
-    background:linear-gradient(135deg,#9acfff,#70a7fc); color:#08182e; border:1px solid #bcdcff;
-    border-radius:.75rem; font-weight:700; box-shadow:inset 0 1px #f3f9ff80;
+@container (max-width:500px) {
+    [data-testid="stHorizontalBlock"] {grid-template-columns:minmax(0,1fr);}
 }
-[data-testid="stBaseButton-primary"]:hover:not(:disabled) {background:#afd8ff; color:#08182e;}
-[data-testid="stBaseButton-primary"]:disabled {background:#263245;color:#a9b4c5;border-color:#394a63;box-shadow:none;}
-[data-testid="stExpander"] details {background:#171e2a;border-color:#354258;border-radius:1rem;}
-[data-testid="stExpander"] summary {padding:.84rem 1rem;}
-[data-testid="stTabs"] [role="tablist"] {gap:.35rem;overflow-x:auto;}
-[data-testid="stTabs"] [role="tab"] {padding-inline:.75rem;white-space:nowrap;}
-@media (max-width: 520px) {.textlab-header {padding:1.25rem;}}
 </style>
 """
 
 
-def read_csv(payload: bytes) -> pd.DataFrame:
+def read_csv(payload: bytes, delimiter: str | None = None, has_header: bool = True, quoted: bool = True) -> pd.DataFrame:
     if payload.startswith((b"\xff\xfe\x00\x00", b"\x00\x00\xfe\xff")):
         decoded = payload.decode("utf-32")
     elif payload.startswith((b"\xff\xfe", b"\xfe\xff")):
@@ -140,12 +102,34 @@ def read_csv(payload: bytes) -> pd.DataFrame:
         except UnicodeDecodeError:
             decoded = payload.decode("cp1252")
 
-    try:
-        delimiter = csv.Sniffer().sniff(decoded[:8192], delimiters=",;\t").delimiter
-    except csv.Error:
-        delimiter = ","
+    if "\x00" in decoded:
+        raise UnicodeError("El archivo contiene caracteres nulos. Exporta como UTF-8 o UTF-16 con BOM.")
 
-    return pd.read_csv(StringIO(decoded), sep=delimiter)
+    if delimiter is None:
+        try:
+            delimiter = csv.Sniffer().sniff(decoded[:8192], delimiters=",;\t|").delimiter
+        except csv.Error:
+            delimiter = ","
+
+    quoting = csv.QUOTE_MINIMAL if quoted else csv.QUOTE_NONE
+    reader = csv.reader(StringIO(decoded), delimiter=delimiter, quoting=quoting, strict=True)
+    expected = None
+    for row in reader:
+        if not row:
+            continue
+        if expected is None:
+            expected = len(row)
+        elif len(row) > expected:
+            raise pd.errors.ParserError(
+                f"La línea {reader.line_num} tiene {len(row)} campos y se esperaban {expected}. Revisa el separador o las comillas."
+            )
+
+    data = pd.read_csv(StringIO(decoded), sep=delimiter, header=0 if has_header else None,
+                       dtype=str, keep_default_na=False, na_values=[""], quoting=quoting)
+    if not has_header:
+        data.columns = [f"Columna {i + 1}" for i in range(len(data.columns))]
+    return data
+
 
 
 def show_distribution(distribution: dict) -> None:
@@ -173,7 +157,7 @@ def show_distribution(distribution: dict) -> None:
         height=max(230, min(650, 130 + 35 * len(labels))),
         margin=dict(l=8, r=70, t=12, b=12),
         bargap=0.42,
-        xaxis=dict(title="Textos", rangemode="tozero", gridcolor="#304461", dtick=1 if max(counts) < 10 else None),
+        xaxis=dict(title="Textos", rangemode="tozero", gridcolor="#dce7f5", dtick=1 if max(counts) < 10 else None),
         yaxis=dict(type="category", autorange="reversed", automargin=True),
     )
     st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
@@ -377,7 +361,7 @@ def show_predictions() -> None:
         payload = upload.getvalue()
         try:
             data = read_csv(payload)
-        except (UnicodeError, pd.errors.EmptyDataError, pd.errors.ParserError):
+        except (UnicodeError, csv.Error, pd.errors.EmptyDataError, pd.errors.ParserError):
             st.error("No se pudo leer el CSV de predicción. Revisa los encabezados y el separador.")
             return
         if data.empty:
@@ -443,7 +427,7 @@ def show_results(result: dict | None) -> None:
                 z=matrix.tolist(),
                 x=labels,
                 y=labels,
-                colorscale=[[0, "#182d4c"], [1, "#338df6"]],
+                colorscale=[[0, "#eff5ff"], [1, "#3977c7"]],
                 texttemplate="%{z}",
                 hovertemplate="Real: %{y}<br>Predicha: %{x}<br>Textos: %{z}<extra></extra>",
                 colorbar=dict(title="Textos"),
@@ -464,8 +448,8 @@ def show_results(result: dict | None) -> None:
         per_class = go.Figure()
         for name, values, color in (
             ("Precisión", precision, "#519cff"),
-            ("Recall", recall, "#39d7ee"),
-            ("F1", f1, "#a1c8ff"),
+            ("Recall", recall, "#147f93"),
+            ("F1", f1, "#7a60b7"),
         ):
             per_class.add_bar(
                 x=labels, y=values.tolist(), name=name, marker_color=color,
@@ -475,7 +459,7 @@ def show_results(result: dict | None) -> None:
         per_class.update_layout(
             barmode="group", height=330, margin=dict(l=8, r=12, t=12, b=12),
             legend=dict(orientation="h", y=1.12),
-            yaxis=dict(tickformat=".0%", range=[0, 1], gridcolor="#304461"),
+            yaxis=dict(tickformat=".0%", range=[0, 1], gridcolor="#dce7f5"),
             xaxis=dict(type="category", automargin=True),
         )
         st.plotly_chart(per_class, width="stretch", config={"displayModeBar": False})
@@ -487,7 +471,7 @@ def show_results(result: dict | None) -> None:
             columns = st.columns(2)
             folds_chart = go.Figure()
             for column, (key, name, color) in zip(
-                columns, (("accuracy", "Accuracy", "#519cff"), ("f1_macro", "F1 macro", "#39d7ee"))
+                columns, (("accuracy", "Accuracy", "#519cff"), ("f1_macro", "F1 macro", "#147f93"))
             ):
                 metric = validation[key]
                 column.metric(f"{name} promedio", f"{metric['promedio']:.1%}")
@@ -501,7 +485,7 @@ def show_results(result: dict | None) -> None:
                 height=280, margin=dict(l=8, r=12, t=12, b=12),
                 legend=dict(orientation="h", y=1.12),
                 xaxis=dict(title="Fold", dtick=1),
-                yaxis=dict(tickformat=".0%", range=[0, 1], gridcolor="#304461"),
+                yaxis=dict(tickformat=".0%", range=[0, 1], gridcolor="#dce7f5"),
             )
             st.plotly_chart(folds_chart, width="stretch", config={"displayModeBar": False})
 
@@ -536,19 +520,26 @@ def main() -> None:
     dataset = None
     result = None
     with st.sidebar:
-        st.header("Conjunto de datos")
-        uploaded = st.file_uploader("Archivo CSV", type=["csv"])
+        st.markdown('<div class="tl-brand"><span class="tl-symbol" aria-hidden="true">◈</span>'
+                    '<div><strong>TextLab</strong><small>manuel_solutions</small></div></div>', unsafe_allow_html=True)
+        st.subheader("Conjunto de datos")
+        uploaded = st.file_uploader("Archivo CSV", type=["csv", "tsv", "txt"])
         use_sample = uploaded is None and st.checkbox("Probar con un CSV de ejemplo")
         if uploaded is not None or use_sample:
             sample = Path(__file__).parent / "datos" / "pruebas" / "carga_valida.csv"
             payload = sample.read_bytes() if use_sample else uploaded.getvalue()
+            with st.expander("Formato de importación", icon=":material/tune:"):
+                separators = {"Automático": None, "Coma": ",", "Punto y coma": ";", "Tabulación": "\t", "Barra vertical": "|"}
+                separator = st.selectbox("Separador", tuple(separators))
+                has_header = st.checkbox("La primera fila tiene encabezados", value=True)
+                quoted = st.checkbox("Las comillas delimitan campos", value=True)
             try:
-                data = read_csv(payload)
-            except (UnicodeError, pd.errors.EmptyDataError, pd.errors.ParserError):
-                st.error("No se pudo leer el CSV. Revisa los encabezados y el separador.")
+                data = read_csv(payload, separators[separator], has_header, quoted)
+            except (UnicodeError, csv.Error, pd.errors.EmptyDataError, pd.errors.ParserError) as error:
+                st.error(f"No se pudo leer el CSV. Revisa el formato de importación. {error}")
             else:
                 if data.empty or len(data.columns) < 2:
-                    st.warning("El CSV debe tener filas y al menos dos columnas.")
+                    st.warning("Se necesita una columna de texto y otra de etiquetas. Si ves una sola columna, cambia el separador en Formato de importación.")
                 else:
                     name = "Ejemplo sintético" if use_sample else uploaded.name
                     text_column = st.selectbox("Columna de texto", data.columns)
@@ -560,29 +551,43 @@ def main() -> None:
                         result = show_training_settings(data, text_column, label_column, sha256(payload).hexdigest(), name)
 
     st.markdown(
-        '<header class="textlab-header"><span class="textlab-mark" aria-hidden="true">◈</span><p class="textlab-brand">manuel_solutions</p><h1>TextLab</h1>'
-        '<p>Entrena, compara y prueba clasificadores de texto.</p></header>',
+        '<header class="textlab-header"><span class="tl-symbol" aria-hidden="true">◈</span><div><h1>TextLab</h1>'
+        '<p>Laboratorio de clasificación de textos</p></div></header>',
         unsafe_allow_html=True,
     )
-    show_results(result)
-    explore, errors, predictions, history = st.tabs(["Explorador de datos", "Análisis de errores", "Predicción", "Experimentos"])
+    if dataset is None:
+        left, right = st.columns((1.55, 1))
+        left.markdown(
+            '<section class="tl-intro"><span class="tl-kpi-icon" aria-hidden="true">▤</span>'
+            '<h2>Empieza con tus datos</h2><p>Sube un CSV desde la barra lateral. Elige la columna que contiene '
+            'los textos y la que contiene sus categorías.</p></section>', unsafe_allow_html=True,
+        )
+        right.markdown(
+            '<section class="tl-format"><span class="tl-kpi-icon" aria-hidden="true">⇄</span>'
+            '<h2>Formato flexible</h2><p>Usa los nombres de columna del archivo original. '
+            'Puedes cambiar el separador o indicar que el CSV viene sin encabezados.</p></section>', unsafe_allow_html=True,
+        )
+        return
+    explore, results, errors, predictions, history = st.tabs(
+        ["Explorador de datos", "Resultados", "Análisis de errores", "Predicción", "Experimentos"],
+        default="Resultados" if result is not None else "Explorador de datos",
+    )
+    with results:
+        show_results(result)
     with explore:
-        if dataset is None:
-            st.info("Carga un CSV o activa el ejemplo desde la barra lateral.")
-        else:
-            data, text_column, label_column, name = dataset
-            profile = perfilar_dataset(data, text_column, label_column)
-            st.caption(name)
-            for column, (title, key) in zip(st.columns(4), (
-                ("Filas", "total_filas"), ("Textos faltantes", "textos_faltantes"),
-                ("Etiquetas faltantes", "etiquetas_faltantes"), ("Duplicadas", "filas_duplicadas"),
-            )):
-                column.metric(title, profile[key])
-            table, distribution = st.columns((1.2, 1))
-            with table.expander("Vista previa del CSV", expanded=True):
-                st.dataframe(data.head(100), width="stretch", hide_index=True)
-            with distribution.expander("Distribución por clase", expanded=True):
-                show_distribution(profile["distribucion_clases"])
+        data, text_column, label_column, name = dataset
+        profile = perfilar_dataset(data, text_column, label_column)
+        st.caption(name)
+        for column, (title, key) in zip(st.columns(4), (
+            ("Filas", "total_filas"), ("Textos faltantes", "textos_faltantes"),
+            ("Etiquetas faltantes", "etiquetas_faltantes"), ("Duplicadas", "filas_duplicadas"),
+        )):
+            column.metric(title, profile[key])
+        table, distribution = st.columns((1.2, 1))
+        with table.expander("Vista previa del CSV", expanded=True):
+            st.dataframe(data.head(100), width="stretch", hide_index=True)
+        with distribution.expander("Distribución por clase", expanded=True):
+            show_distribution(profile["distribucion_clases"])
     with errors:
         show_errors(result)
     with predictions:
